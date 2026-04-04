@@ -1119,6 +1119,14 @@
             document.getElementById('sim-slider-wrap').classList.remove('visible');
         };
 
+        // Cancel camera animation as soon as user interacts
+        ['pointerdown', 'wheel', 'touchstart'].forEach(evt => {
+            renderer.domElement.addEventListener(evt, () => {
+                targetPos = null;
+                targetLook = null;
+            }, { passive: true });
+        });
+
         // Close dropdown on outside click
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.sim-group')) {
@@ -1303,6 +1311,22 @@
             renderer.setSize(innerWidth, innerHeight);
             composer.setSize(innerWidth, innerHeight);
         });
+
+        // Start in overview mode — compute initial Moon position to place camera
+        (() => {
+            const now = Date.now();
+            const elapsed = now - LAUNCH_TIME;
+            const t = Math.max(0, Math.min(elapsed / MISSION_DURATION_MS, 1.0));
+            const day = t * MISSION_DAYS;
+            const moonKm = getMoonPos(day);
+            moonGroup.position.set(moonKm.x * SCALE, moonKm.y * SCALE, moonKm.z * SCALE);
+            const mid = moonGroup.position.clone().multiplyScalar(0.45);
+            mid.y = 0;
+            camera.position.set(mid.x, 100, mid.z + 60);
+            controls.target.copy(mid);
+            controls.update();
+            cameraMode = 'overview';
+        })();
 
         setTimeout(() => {
             document.getElementById('loading').classList.add('hidden');
