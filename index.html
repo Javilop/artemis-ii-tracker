@@ -327,7 +327,8 @@
     </div><!-- /bottom-panel -->
 
     <div id="controls-hint">
-        <button class="hint-btn" id="btn-follow" onclick="toggleFollow()">Follow Orion</button>
+        <button class="hint-btn" id="btn-pilot" onclick="togglePilot()">Switch to Planet Express</button>
+        <button class="hint-btn" id="btn-follow" onclick="toggleFollow()">Follow Spacecraft</button>
         <button class="hint-btn" onclick="focusEarth()">Focus Earth</button>
         <button class="hint-btn" onclick="focusMoon()">Focus Moon</button>
         <button class="hint-btn" onclick="focusOverview()">Overview</button>
@@ -359,6 +360,7 @@
     <script type="module">
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
         import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
@@ -1023,7 +1025,47 @@
         orionLabel.position.set(0, 0.6, 0);
         orionGroup.add(orionLabel);
 
+        orionGroup.visible = true;
         scene.add(orionGroup);
+
+        // ═══════════════════════════════════════════
+        // PLANET EXPRESS SPACECRAFT (Futurama)
+        // ═══════════════════════════════════════════
+        const planetExpressGroup = new THREE.Group();
+        let planetExpressModel = null;
+        
+        // Load the GLB model
+        const gltfLoader = new GLTFLoader();
+        gltfLoader.load(
+            'spaceship Goodnews.glb',
+            (gltf) => {
+                planetExpressModel = gltf.scene;
+                // Scale and adjust the model
+                planetExpressModel.scale.set(0.5, 0.5, 0.5);
+                
+                // Add engine glow
+                const engineGlow = new THREE.PointLight(0xff6b35, 1.5, 5);
+                engineGlow.position.set(0, 0, -2);
+                planetExpressModel.add(engineGlow);
+                
+                planetExpressGroup.add(planetExpressModel);
+                console.log('Planet Express ship loaded successfully');
+            },
+            (progress) => {
+                console.log('Loading Planet Express ship:', (progress.loaded / progress.total * 100) + '%');
+            },
+            (error) => {
+                console.error('Error loading Planet Express ship:', error);
+            }
+        );
+
+        // Planet Express label
+        const planetExpressLabel = createLabel('PLANET EXPRESS · Good News Everyone', '#ff6b35');
+        planetExpressLabel.position.set(0, 0.6, 0);
+        planetExpressGroup.add(planetExpressLabel);
+
+        planetExpressGroup.visible = false;
+        scene.add(planetExpressGroup);
 
         // ═══════════════════════════════════════════
         // LIGHTING
@@ -1121,9 +1163,30 @@
             clearActiveButtons();
             document.getElementById('btn-follow').classList.add('active');
             controls.enabled = true;
-            const op = orionGroup.position.clone();
+            const op = spacecraftGroup.position.clone();
             targetPos = op.clone().add(new THREE.Vector3(1, 1.5, 2));
             targetLook = op.clone();
+        };
+
+        // Toggle between Orion and Planet Express
+        let currentPilot = 'orion';
+        window.togglePilot = () => {
+            const btn = document.getElementById('btn-pilot');
+            if (currentPilot === 'orion') {
+                // Switch to Planet Express
+                orionGroup.visible = false;
+                planetExpressGroup.visible = true;
+                currentPilot = 'planetexpress';
+                btn.textContent = 'Switch to Orion';
+                btn.classList.add('active');
+            } else {
+                // Switch to Orion
+                orionGroup.visible = true;
+                planetExpressGroup.visible = false;
+                currentPilot = 'orion';
+                btn.textContent = 'Switch to Planet Express';
+                btn.classList.remove('active');
+            }
         };
 
         window.focusEarth = () => {
@@ -1304,17 +1367,31 @@
             const orionSc = new THREE.Vector3(orionKm.x * SCALE, orionKm.y * SCALE, orionKm.z * SCALE);
             orionGroup.position.copy(orionSc);
 
-            // Orient along trajectory
+            // ── Update Planet Express ──
+            planetExpressGroup.position.copy(orionSc);
+
+            // Orient along trajectory (both spacecraft)
             const nextKm = getTrajectoryPos(Math.min(simDay + 0.005, MISSION_DAYS));
             const dir = new THREE.Vector3().subVectors(
                 new THREE.Vector3(nextKm.x, nextKm.y, nextKm.z),
                 orionKm
             ).normalize();
             orionGroup.lookAt(orionSc.clone().add(dir.clone().multiplyScalar(SCALE)));
+            planetExpressGroup.lookAt(orionSc.clone().add(dir.clone().multiplyScalar(SCALE)));
 
-            // Beacon pulse
+            // Beacon pulse (Orion)
             beacon.material.opacity = 0.7 + 0.3 * Math.sin(now * 0.006);
             engineGlow.intensity = 2 + Math.sin(now * 0.004) * 1;
+
+            // Planet Express animations
+            if (planetExpressGroup.visible && planetExpressModel) {
+                // Engine pulse
+                planetExpressGroup.children.forEach(child => {
+                    if (child.isPointLight) {
+                        child.intensity = 1.5 + Math.sin(now * 0.005) * 0.5;
+                    }
+                });
+            }
 
             // ── Traveled trajectory ──
             // trajPts maps data indices TLI_INDEX..TRAJ_N-1, 10 subdivisions each
@@ -1384,6 +1461,7 @@
             earthLabel.lookAt(camera.position);
             moonLabel.lookAt(camera.position);
             orionLabel.lookAt(camera.position);
+            planetExpressLabel.lookAt(camera.position);
 
             // ═══ HUD UPDATE — uses simDay during simulation/scrub ═══
             const hudDay = (scrubDay !== null || speedMult > 1) ? simDay : realDay;
