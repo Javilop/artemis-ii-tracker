@@ -206,6 +206,58 @@
             font-size: 10px; color: rgba(255,255,255,0.15); letter-spacing: 2px;
             pointer-events: none; z-index: 5;
         }
+
+        /* ═══ MOBILE ═══ */
+        @media (max-width: 768px) {
+            #hud { padding: 14px 16px; }
+            .mission-title { font-size: 9px; letter-spacing: 3px; }
+            .mission-name { font-size: 24px; }
+            .mission-status { font-size: 9px; letter-spacing: 1.5px; }
+            .met-counter { font-size: 10px; }
+
+            #controls-hint {
+                top: 14px; right: 12px; gap: 3px;
+            }
+            .hint-btn {
+                padding: 5px 10px; font-size: 9px;
+                min-width: 105px; border-radius: 6px;
+            }
+            .sim-slider-wrap input[type="range"] { width: 80px; }
+            .sim-slider-label { font-size: 9px; min-width: 40px; }
+
+            /* Bottom panel: flex column, consistent spacing */
+            #bottom-panel {
+                position: fixed; bottom: 0; left: 0; right: 0;
+                z-index: 10; display: flex; flex-direction: column;
+                gap: 6px; padding: 6px 10px;
+                pointer-events: none;
+            }
+            #telemetry {
+                position: static; pointer-events: none;
+            }
+            .telem-grid {
+                grid-template-columns: repeat(4, 1fr); gap: 4px;
+            }
+            .telem-card {
+                padding: 5px 6px; min-width: unset;
+                border-radius: 6px;
+            }
+            .telem-label { font-size: 6px; letter-spacing: 0.5px; margin-bottom: 1px; }
+            .telem-value { font-size: 12px; }
+            .telem-unit { font-size: 7px; }
+
+            #timeline {
+                position: static; width: auto;
+                pointer-events: auto;
+            }
+            .timeline-bar {
+                padding: 10px 14px; border-radius: 10px;
+            }
+            .timeline-header { margin-bottom: 8px; }
+            .timeline-title { font-size: 8px; }
+            .timeline-met { font-size: 11px; }
+            .phase-label { font-size: 7px; }
+        }
     </style>
 </head>
 <body>
@@ -229,6 +281,7 @@
     </div>
 
 
+    <div id="bottom-panel">
     <div id="telemetry">
         <div class="telem-grid">
             <div class="telem-card">
@@ -271,6 +324,7 @@
             </div>
         </div>
     </div>
+    </div><!-- /bottom-panel -->
 
     <div id="controls-hint">
         <button class="hint-btn" id="btn-follow" onclick="toggleFollow()">Follow Orion</button>
