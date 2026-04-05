@@ -148,6 +148,7 @@
             display: none; position: absolute; right: 0; top: 100%; margin-top: 4px;
             background: rgba(10,12,20,0.85); border: 1px solid rgba(255,255,255,0.1);
             border-radius: 8px; overflow: hidden; min-width: 80px;
+            z-index: 100;
             backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
         }
         .sim-dropdown.open { display: block; }
@@ -276,7 +277,9 @@
         <button class="hint-btn" id="btn-follow" onclick="toggleFollow()">Follow Orion</button>
         <button class="hint-btn" onclick="focusEarth()">Focus Earth</button>
         <button class="hint-btn" onclick="focusMoon()">Focus Moon</button>
-        <button class="hint-btn" onclick="focusOverview()">Overview</button>
+        <button class="hint-btn" id="btn-earth-moon" onclick="focusEarthMoon()">Earth &amp; Moon</button>
+        <button class="hint-btn" id="btn-earth-mars" onclick="focusEarthMars()">Earth &amp; Mars</button>
+        <button class="hint-btn" id="btn-solar-system" onclick="focusSolarSystem()">Solar System</button>
         <div class="sim-group">
             <button class="hint-btn" id="btn-sim" onclick="toggleSimMenu()">Simulate Travel</button>
             <div class="sim-dropdown" id="sim-dropdown">
@@ -284,9 +287,13 @@
                 <button class="sim-opt" onclick="setSpeed(5000)">5,000x</button>
                 <button class="sim-opt" onclick="setSpeed(10000)">10,000x</button>
                 <button class="sim-opt" onclick="setSpeed(30000)">30,000x</button>
+                <button class="sim-opt" onclick="setSpeed(250000)">250,000x</button>
+                <button class="sim-opt" onclick="setSpeed(1000000)">1,000,000x</button>
+                <button class="sim-opt" onclick="setSpeed(10000000)">10,000,000x</button>
             </div>
         </div>
         <button class="hint-btn" id="btn-reset" onclick="resetRealTime()" style="display:none">Reset to Real Time</button>
+        <button class="hint-btn" id="btn-play-pause" onclick="togglePlayback()" aria-label="Pause playback">&#10074;&#10074; Pause</button>
         <div class="sim-slider-wrap" id="sim-slider-wrap">
             <input type="range" id="sim-slider" min="0" max="100" value="25"
                    oninput="onSliderChange(this.value)">
@@ -324,6 +331,30 @@
         const eR = EARTH_RADIUS_KM * SCALE;  // ~1.59
         const mR = MOON_RADIUS_KM * SCALE;   // ~0.43
         const emDist = EARTH_MOON_DIST_KM * SCALE; // ~96.1
+
+        // Solar-system view data
+        // Source for radii, semimajor axes, and sidereal periods:
+        // NASA NSSDCA planetary fact sheets / fact table
+        const EXISTING_SUN_SPRITE_POS = new THREE.Vector3(500, 0, -250);
+        const SOLAR_CENTER = new THREE.Vector3(EXISTING_SUN_SPRITE_POS.x, 0, EXISTING_SUN_SPRITE_POS.z);
+        const EXISTING_EARTH_SOLAR_DISTANCE = Math.hypot(SOLAR_CENTER.x, SOLAR_CENTER.z);
+        const SOLAR_ORBIT_SCALE = EXISTING_EARTH_SOLAR_DISTANCE / 149598262;
+        const SOLAR_PLANET_RADIUS_SCALE = 1 / 6000;  // visibility scale for planet sizes
+        const MIN_SIM_SPEED = 500;
+        const MAX_SIM_SPEED = 10000000;
+        const MARS_TRANSFER_DAYS = 520;
+        const MARS_RETURN_DAYS = 320;
+        const solarSystemData = [
+            { name: 'Mercury', radiusKm: 2439.7, orbitKm: 57909227, periodDays: 87.969, color: 0xb7b0a5, phase: 4.85, orbitColor: 0x7f7a72, label: '#d0c9bd' },
+            { name: 'Venus', radiusKm: 6051.8, orbitKm: 108209475, periodDays: 224.701, color: 0xd7b37c, phase: 2.3, orbitColor: 0x9d7f59, label: '#f1d1a5' },
+            { name: 'Earth', radiusKm: 6371.0, orbitKm: 149598262, periodDays: 365.256, color: 0x4d90ff, phase: 0.5, orbitColor: 0x2f6fd4, label: '#70a8ff' },
+            { name: 'Mars', radiusKm: 3389.5, orbitKm: 227943824, periodDays: 686.980, color: 0xc65b38, phase: 1.3, orbitColor: 0x914129, label: '#f08b69' },
+            { name: 'Jupiter', radiusKm: 69911, orbitKm: 778340821, periodDays: 4332.59, color: 0xc9a67b, phase: 5.2, orbitColor: 0x85684a, label: '#e4c7a5' },
+            { name: 'Saturn', radiusKm: 58232, orbitKm: 1426666422, periodDays: 10759.22, color: 0xd7c28b, phase: 5.85, orbitColor: 0x8c7b4d, label: '#efddb1', hasRings: true },
+            { name: 'Uranus', radiusKm: 25362, orbitKm: 2870658186, periodDays: 30688.5, color: 0x8ad7e0, phase: 3.5, orbitColor: 0x4b8891, label: '#adeff6' },
+            { name: 'Neptune', radiusKm: 24622, orbitKm: 4498396441, periodDays: 60182, color: 0x4b6cff, phase: 4.05, orbitColor: 0x3047aa, label: '#87a0ff' }
+        ];
+        const solarPlanets = {};
 
         // ═══════════════════════════════════════════
         // TRAJECTORY MODEL — Realistic free-return
@@ -532,7 +563,7 @@
         // ═══════════════════════════════════════════
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.01, 8000);
+        const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.01, 40000);
         // Overview: above midpoint between Earth and Moon
         camera.position.set(44, 100, 60);
 
@@ -552,10 +583,15 @@
         controls.enableDamping = true;
         controls.dampingFactor = 0.06;
         controls.minDistance = 0.5;
-        controls.maxDistance = 1200;
+        controls.maxDistance = 24000;
         controls.target.set(44, 0, -15);
 
         const textureLoader = new THREE.TextureLoader();
+        const solarSystemGroup = new THREE.Group();
+        solarSystemGroup.position.copy(SOLAR_CENTER);
+        scene.add(solarSystemGroup);
+        const starBackgroundGroup = new THREE.Group();
+        scene.add(starBackgroundGroup);
 
         // ═══════════════════════════════════════════
         // STARFIELD
@@ -577,7 +613,7 @@
             const g = new THREE.BufferGeometry();
             g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
             g.setAttribute('color', new THREE.BufferAttribute(col, 3));
-            scene.add(new THREE.Points(g, new THREE.PointsMaterial({
+            starBackgroundGroup.add(new THREE.Points(g, new THREE.PointsMaterial({
                 size: 0.35, vertexColors: true, transparent: true, opacity: 0.85,
                 sizeAttenuation: true, blending: THREE.AdditiveBlending
             })));
@@ -598,7 +634,7 @@
             }
             const g = new THREE.BufferGeometry();
             g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-            scene.add(new THREE.Points(g, new THREE.PointsMaterial({
+            starBackgroundGroup.add(new THREE.Points(g, new THREE.PointsMaterial({
                 size: 0.6, color: 0x8899cc, transparent: true, opacity: 0.12,
                 sizeAttenuation: true, blending: THREE.AdditiveBlending
             })));
@@ -733,7 +769,7 @@
         });
 
         textureLoader.load(
-            'https://unpkg.com/three-globe@2.31.1/example/img/lunar-surface.jpg',
+            'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/moon_1024.jpg',
             (tex) => {
                 moonMat.map = tex;
                 moonMat.color.set(0xcccccc);
@@ -995,7 +1031,7 @@
             const sunSprite = new THREE.Sprite(new THREE.SpriteMaterial({
                 map: tex, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending
             }));
-            sunSprite.position.set(500, 120, -250);
+            sunSprite.position.copy(EXISTING_SUN_SPRITE_POS);
             sunSprite.scale.set(40, 40, 1);
             scene.add(sunSprite);
         })();
@@ -1023,14 +1059,181 @@
             return Math.round(Math.abs(n)).toLocaleString('en-US');
         }
 
+        function getPlanetLocalPos(planet, day) {
+            const angle = planet.phase + (day / planet.periodDays) * Math.PI * 2;
+            const r = planet.orbitKm * SOLAR_ORBIT_SCALE;
+            return new THREE.Vector3(Math.cos(angle) * r, 0, Math.sin(angle) * r);
+        }
+
+        function getPlanetWorldPos(planet, day) {
+            return getPlanetLocalPos(planet, day).add(SOLAR_CENTER);
+        }
+
+        function buildCirclePoints(radius, segments = 256) {
+            const pts = [];
+            for (let i = 0; i <= segments; i++) {
+                const a = (i / segments) * Math.PI * 2;
+                pts.push(new THREE.Vector3(Math.cos(a) * radius, 0, Math.sin(a) * radius));
+            }
+            return pts;
+        }
+
+        function buildTransferSegment(start, end, height, outwardScale) {
+            const mid = start.clone().add(end).multiplyScalar(0.5);
+            const outward = mid.clone().normalize().multiplyScalar(outwardScale);
+            const curve = new THREE.CatmullRomCurve3([
+                start.clone(),
+                start.clone().lerp(end, 0.22).add(new THREE.Vector3(0, height * 0.65, 0)).add(outward.clone().multiplyScalar(0.35)),
+                mid.clone().add(new THREE.Vector3(0, height, 0)).add(outward),
+                start.clone().lerp(end, 0.78).add(new THREE.Vector3(0, height * 0.6, 0)).add(outward.clone().multiplyScalar(0.25)),
+                end.clone()
+            ]);
+            return curve.getPoints(72);
+        }
+
+        // ═══════════════════════════════════════════
+        // SOLAR SYSTEM
+        // ═══════════════════════════════════════════
+        for (const planet of solarSystemData) {
+            const orbitRadius = planet.orbitKm * SOLAR_ORBIT_SCALE;
+            const orbitLine = new THREE.Line(
+                new THREE.BufferGeometry().setFromPoints(buildCirclePoints(orbitRadius)),
+                new THREE.LineBasicMaterial({
+                    color: planet.orbitColor,
+                    transparent: true,
+                    opacity: planet.name === 'Earth' ? 0.32 : 0.18
+                })
+            );
+            orbitLine.frustumCulled = false;
+            solarSystemGroup.add(orbitLine);
+
+            const orbitBandWidth = Math.max(orbitRadius * 0.024, 4);
+            const orbitBand = new THREE.Mesh(
+                new THREE.RingGeometry(
+                    Math.max(0.1, orbitRadius - orbitBandWidth * 0.5),
+                    orbitRadius + orbitBandWidth * 0.5,
+                    256
+                ),
+                new THREE.MeshBasicMaterial({
+                    color: planet.orbitColor,
+                    transparent: true,
+                    opacity: 0,
+                    side: THREE.DoubleSide,
+                    depthWrite: false
+                })
+            );
+            orbitBand.rotation.x = Math.PI / 2;
+            orbitBand.frustumCulled = false;
+            solarSystemGroup.add(orbitBand);
+
+            const planetGroup = new THREE.Group();
+            const bodyRadius = Math.max(planet.radiusKm * SOLAR_PLANET_RADIUS_SCALE, 0.5);
+            const body = new THREE.Mesh(
+                new THREE.SphereGeometry(bodyRadius, 32, 16),
+                new THREE.MeshBasicMaterial({
+                    color: planet.color,
+                    transparent: true,
+                    opacity: 0.96
+                })
+            );
+            planetGroup.add(body);
+
+            const glow = new THREE.Mesh(
+                new THREE.SphereGeometry(bodyRadius * 3.2, 16, 12),
+                new THREE.MeshBasicMaterial({
+                    color: planet.color,
+                    transparent: true,
+                    opacity: 0.18,
+                    blending: THREE.AdditiveBlending
+                })
+            );
+            planetGroup.add(glow);
+
+            (() => {
+                const c = document.createElement('canvas');
+                c.width = 128; c.height = 128;
+                const ctx = c.getContext('2d');
+                const color = `#${planet.color.toString(16).padStart(6, '0')}`;
+                const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+                grad.addColorStop(0, color);
+                grad.addColorStop(0.22, color);
+                grad.addColorStop(0.45, `${color}88`);
+                grad.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, 128, 128);
+                const tex = new THREE.CanvasTexture(c);
+                const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+                    map: tex,
+                    transparent: true,
+                    opacity: 0.42,
+                    depthWrite: false,
+                    blending: THREE.AdditiveBlending
+                }));
+                const spriteSize = Math.max(bodyRadius * 4.6, 4.5);
+                sprite.scale.set(spriteSize, spriteSize, 1);
+                planetGroup.add(sprite);
+            })();
+
+            if (planet.hasRings) {
+                const rings = new THREE.Mesh(
+                    new THREE.RingGeometry(bodyRadius * 1.35, bodyRadius * 2.4, 64),
+                    new THREE.MeshBasicMaterial({
+                        color: 0xd7c7a1,
+                        transparent: true,
+                        opacity: 0.45,
+                        side: THREE.DoubleSide
+                    })
+                );
+                rings.rotation.x = Math.PI / 2;
+                rings.rotation.z = 0.55;
+                planetGroup.add(rings);
+            }
+
+            const label = createLabel(planet.name.toUpperCase(), planet.label);
+            label.position.set(0, bodyRadius + 2.2, 0);
+            label.scale.set(5.2, 0.65, 1);
+            planetGroup.add(label);
+
+            solarSystemGroup.add(planetGroup);
+            solarPlanets[planet.name] = {
+                data: planet,
+                group: planetGroup,
+                label,
+                orbitLine,
+                orbitBand,
+                orbitBaseOpacity: planet.name === 'Earth' ? 0.32 : 0.18
+            };
+        }
+
+        const marsTransferLine = new THREE.Line(
+            new THREE.BufferGeometry(),
+            new THREE.LineDashedMaterial({
+                color: 0xff8c42,
+                transparent: true,
+                opacity: 0.9,
+                dashSize: 2.5,
+                gapSize: 1.2
+            })
+        );
+        solarSystemGroup.add(marsTransferLine);
+
+        const marsTransferGlow = new THREE.Line(
+            new THREE.BufferGeometry(),
+            new THREE.LineBasicMaterial({ color: 0xff6b35, transparent: true, opacity: 0.15 })
+        );
+        solarSystemGroup.add(marsTransferGlow);
+
         // ═══════════════════════════════════════════
         // STATE & CONTROLS
         // ═══════════════════════════════════════════
-        // Camera modes: 'free', 'follow-orion', 'overview'
+        // Camera modes: 'free', 'follow-orion', 'earth-moon', 'earth-mars', 'solar-system'
         let cameraMode = 'free';
+        let activeView = 'earth-moon';
         let speedMult = 1;
         let simStartReal = null;   // Date.now() when sim was activated
-        let simStartDay = null;    // mission day when sim was activated
+        let simStartDay = null;    // elapsed day when sim was activated
+        let paused = false;
+        let pausedDay = null;
         let prevFrameTime = Date.now();
         let sunAngle = 0;          // Sun orbital angle
         let targetPos = null;
@@ -1038,13 +1241,42 @@
 
         function clearActiveButtons() {
             document.getElementById('btn-follow').classList.remove('active');
+            document.getElementById('btn-earth-moon').classList.remove('active');
+            document.getElementById('btn-earth-mars').classList.remove('active');
+            document.getElementById('btn-solar-system').classList.remove('active');
+        }
+
+        function setActiveViewButton(id) {
+            clearActiveButtons();
+            document.getElementById(id).classList.add('active');
+        }
+
+        function getCurrentSceneDay(now = Date.now()) {
+            if (scrubDay !== null) return scrubDay;
+            if (paused && pausedDay !== null) return pausedDay;
+            if (simStartReal !== null && simStartDay !== null) {
+                return Math.max(0, simStartDay + (now - simStartReal) * speedMult / 86400000);
+            }
+            return Math.max(0, (now - LAUNCH_TIME) / 86400000);
+        }
+
+        function updatePlaybackButton() {
+            const btn = document.getElementById('btn-play-pause');
+            const isPausedState = paused || scrubDay !== null;
+            btn.innerHTML = isPausedState ? '&#9654; Play' : '&#10074;&#10074; Pause';
+            btn.setAttribute('aria-label', isPausedState ? 'Play playback' : 'Pause playback');
+            btn.classList.toggle('sim-active', isPausedState);
         }
 
         // Follow Orion: orbit controls stay enabled, target tracks Orion
         window.toggleFollow = () => {
             if (cameraMode === 'follow-orion') {
                 cameraMode = 'free';
-                clearActiveButtons();
+                setActiveViewButton(
+                    activeView === 'earth-mars' ? 'btn-earth-mars' :
+                    activeView === 'solar-system' ? 'btn-solar-system' :
+                    'btn-earth-moon'
+                );
                 return;
             }
             cameraMode = 'follow-orion';
@@ -1058,7 +1290,11 @@
 
         window.focusEarth = () => {
             cameraMode = 'free';
-            clearActiveButtons();
+            setActiveViewButton(
+                activeView === 'earth-mars' ? 'btn-earth-mars' :
+                activeView === 'solar-system' ? 'btn-solar-system' :
+                'btn-earth-moon'
+            );
             controls.enabled = true;
             targetPos = new THREE.Vector3(0, eR * 6, eR * 8);
             targetLook = new THREE.Vector3(0, 0, 0);
@@ -1066,17 +1302,21 @@
 
         window.focusMoon = () => {
             cameraMode = 'free';
-            clearActiveButtons();
+            setActiveViewButton(
+                activeView === 'earth-mars' ? 'btn-earth-mars' :
+                activeView === 'solar-system' ? 'btn-solar-system' :
+                'btn-earth-moon'
+            );
             controls.enabled = true;
             const mp = moonGroup.position;
             targetPos = new THREE.Vector3(mp.x + mR * 4, mp.y + mR * 6, mp.z + mR * 10);
             targetLook = mp.clone();
         };
 
-        // Overview: orbit controls target = midpoint of trajectory
-        window.focusOverview = () => {
-            cameraMode = 'overview';
-            clearActiveButtons();
+        window.focusEarthMoon = () => {
+            cameraMode = 'earth-moon';
+            activeView = 'earth-moon';
+            setActiveViewButton('btn-earth-moon');
             controls.enabled = true;
             const mid = moonGroup.position.clone().multiplyScalar(0.45);
             mid.y = 0;
@@ -1084,31 +1324,52 @@
             targetLook = mid.clone();
         };
 
+        window.focusEarthMars = () => {
+            cameraMode = 'earth-mars';
+            activeView = 'earth-mars';
+            setActiveViewButton('btn-earth-mars');
+            controls.enabled = true;
+            const earthPos = solarPlanets.Earth.group.position.clone().add(SOLAR_CENTER);
+            const marsPos = solarPlanets.Mars.group.position.clone().add(SOLAR_CENTER);
+            const mid = earthPos.clone().lerp(marsPos, 0.5);
+            const dist = earthPos.distanceTo(marsPos);
+            targetPos = mid.clone().add(new THREE.Vector3(0, Math.max(340, dist * 1.05), Math.max(680, dist * 1.45)));
+            targetLook = mid;
+        };
+
+        window.focusSolarSystem = () => {
+            cameraMode = 'solar-system';
+            activeView = 'solar-system';
+            setActiveViewButton('btn-solar-system');
+            controls.enabled = true;
+            targetPos = SOLAR_CENTER.clone().add(new THREE.Vector3(0, 2600, 6150));
+            targetLook = SOLAR_CENTER.clone();
+        };
+
+        window.focusOverview = window.focusEarthMoon;
+
         // Simulate travel
         window.toggleSimMenu = () => {
             document.getElementById('sim-dropdown').classList.toggle('open');
         };
 
-        // Slider maps 0-100 → 500x to 50000x (exponential)
+        // Slider maps 0-100 → MIN_SIM_SPEED to MAX_SIM_SPEED (exponential)
         function sliderToSpeed(val) {
             const t = val / 100; // 0→1
-            return Math.round(500 * Math.pow(100, t)); // 500 → 50000
+            return Math.round(MIN_SIM_SPEED * Math.pow(MAX_SIM_SPEED / MIN_SIM_SPEED, t));
         }
 
         function speedToSlider(spd) {
-            return Math.round(100 * Math.log(spd / 500) / Math.log(100));
+            return Math.round(100 * Math.log(spd / MIN_SIM_SPEED) / Math.log(MAX_SIM_SPEED / MIN_SIM_SPEED));
         }
 
         window.setSpeed = (spd) => {
             simStartReal = Date.now();
             // Start simulation from scrub position if user was scrubbing, else from real time
-            if (scrubDay !== null) {
-                simStartDay = scrubDay;
-                scrubDay = null;
-            } else {
-                const elapsed = simStartReal - LAUNCH_TIME;
-                simStartDay = Math.max(0, Math.min(elapsed / MISSION_DURATION_MS, 1.0)) * MISSION_DAYS;
-            }
+            simStartDay = getCurrentSceneDay(simStartReal);
+            scrubDay = null;
+            paused = false;
+            pausedDay = null;
             speedMult = spd;
             document.getElementById('sim-dropdown').classList.remove('open');
             document.getElementById('btn-sim').classList.add('sim-active');
@@ -1118,35 +1379,58 @@
             document.getElementById('sim-slider-wrap').classList.add('visible');
             document.getElementById('sim-slider').value = speedToSlider(spd);
             document.getElementById('sim-slider-label').textContent = spd.toLocaleString() + 'x';
+            updatePlaybackButton();
         };
 
         window.onSliderChange = (val) => {
             const spd = sliderToSpeed(Number(val));
             // Keep simStartReal but recalculate simStartDay from current simDay
             const now = Date.now();
-            if (simStartReal !== null) {
-                const dtMs = now - simStartReal;
-                const curSimDay = simStartDay + (dtMs * speedMult) / MISSION_DURATION_MS * MISSION_DAYS;
-                simStartDay = Math.max(0, Math.min(curSimDay, MISSION_DAYS));
-            } else {
-                const elapsed = now - LAUNCH_TIME;
-                simStartDay = Math.max(0, Math.min(elapsed / MISSION_DURATION_MS, 1.0)) * MISSION_DAYS;
-            }
+            simStartDay = getCurrentSceneDay(now);
             simStartReal = now;
+            scrubDay = null;
+            paused = false;
+            pausedDay = null;
             speedMult = spd;
             document.getElementById('btn-sim').textContent = `Simulating ${spd.toLocaleString()}x`;
             document.getElementById('sim-slider-label').textContent = spd.toLocaleString() + 'x';
+            document.getElementById('btn-reset').style.display = 'block';
+            document.getElementById('sim-slider-wrap').classList.add('visible');
+            updatePlaybackButton();
+        };
+
+        window.togglePlayback = () => {
+            const now = Date.now();
+            if (paused || scrubDay !== null) {
+                const resumeDay = scrubDay !== null ? scrubDay : pausedDay;
+                simStartDay = Math.max(0, resumeDay ?? getCurrentSceneDay(now));
+                simStartReal = now;
+                scrubDay = null;
+                paused = false;
+                pausedDay = null;
+                document.getElementById('btn-reset').style.display = 'block';
+            } else {
+                pausedDay = getCurrentSceneDay(now);
+                paused = true;
+                simStartReal = null;
+                simStartDay = null;
+                document.getElementById('btn-reset').style.display = 'block';
+            }
+            updatePlaybackButton();
         };
 
         window.resetRealTime = () => {
             speedMult = 1;
             simStartReal = null;
             simStartDay = null;
+            paused = false;
+            pausedDay = null;
             scrubDay = null;
             document.getElementById('btn-sim').classList.remove('sim-active');
             document.getElementById('btn-sim').textContent = 'Simulate Travel';
             document.getElementById('btn-reset').style.display = 'none';
             document.getElementById('sim-slider-wrap').classList.remove('visible');
+            updatePlaybackButton();
         };
 
         // Timeline scrub — user drags the mission timeline slider
@@ -1157,16 +1441,18 @@
             // Slider 0-10000 maps to TLI_DAY → MISSION_DAYS
             scrubDay = TLI_DAY + (val / 10000) * (MISSION_DAYS - TLI_DAY);
             scrubbing = true;
-            // Pause any running simulation
+            paused = false;
+            pausedDay = null;
+            simStartReal = null;
+            simStartDay = null;
             if (speedMult > 1) {
-                simStartReal = null;
-                simStartDay = null;
                 speedMult = 1;
                 document.getElementById('btn-sim').classList.remove('sim-active');
                 document.getElementById('btn-sim').textContent = 'Simulate Travel';
                 document.getElementById('btn-reset').style.display = 'none';
                 document.getElementById('sim-slider-wrap').classList.remove('visible');
             }
+            updatePlaybackButton();
         };
 
         // Detect when user finishes scrubbing
@@ -1208,22 +1494,60 @@
 
             // Mission time (real for HUD)
             const realElapsed = now - LAUNCH_TIME;
+            const realElapsedDays = Math.max(0, realElapsed / 86400000);
             const realT = Math.max(0, Math.min(realElapsed / MISSION_DURATION_MS, 1.0));
             const realDay = realT * MISSION_DAYS;
 
             // Simulated time for 3D scene
-            let simDay;
+            let simDayRaw;
             if (scrubDay !== null) {
                 // User is scrubbing the timeline
-                simDay = scrubDay;
-            } else if (simStartReal !== null && speedMult > 1) {
+                simDayRaw = scrubDay;
+            } else if (paused && pausedDay !== null) {
+                simDayRaw = pausedDay;
+            } else if (simStartReal !== null && simStartDay !== null) {
                 const dtMs = now - simStartReal;
-                simDay = simStartDay + (dtMs * speedMult) / MISSION_DURATION_MS * MISSION_DAYS;
-                simDay = Math.max(0, Math.min(simDay, MISSION_DAYS));
+                simDayRaw = simStartDay + (dtMs * speedMult) / 86400000;
             } else {
-                simDay = realDay;
+                simDayRaw = realElapsedDays;
             }
+            const simDay = Math.max(0, Math.min(simDayRaw, MISSION_DAYS));
+            const solarDay = Math.max(0, simDayRaw);
             const simT = simDay / MISSION_DAYS;
+            const starScale = activeView === 'solar-system' ? 4 : 1;
+            starBackgroundGroup.scale.lerp(
+                new THREE.Vector3(starScale, starScale, starScale),
+                0.08
+            );
+
+            // ── Update Solar System ──
+            for (const name in solarPlanets) {
+                const planet = solarPlanets[name];
+                planet.group.position.copy(getPlanetLocalPos(planet.data, solarDay));
+                const solarOrbitMode = activeView === 'solar-system';
+                planet.orbitBand.material.opacity = solarOrbitMode
+                    ? (name === 'Earth' ? 0.32 : 0.24)
+                    : 0;
+                planet.orbitLine.material.opacity = solarOrbitMode
+                    ? Math.min(0.95, planet.orbitBaseOpacity + 0.42)
+                    : planet.orbitBaseOpacity;
+            }
+
+            const earthSolarPos = solarPlanets.Earth.group.position.clone();
+            const marsSolarPos = solarPlanets.Mars.group.position.clone();
+            const returnEarthPos = getPlanetLocalPos(solarPlanets.Earth.data, solarDay + MARS_TRANSFER_DAYS + MARS_RETURN_DAYS);
+            const transferHeight = Math.max(18, earthSolarPos.distanceTo(marsSolarPos) * 0.16);
+            const transferOut = buildTransferSegment(earthSolarPos, marsSolarPos, transferHeight, 18);
+            const transferBack = buildTransferSegment(marsSolarPos, returnEarthPos, -transferHeight * 0.9, 12).slice(1);
+            const transferPts = transferOut.concat(transferBack);
+            marsTransferLine.geometry.dispose();
+            marsTransferLine.geometry = new THREE.BufferGeometry().setFromPoints(transferPts);
+            marsTransferLine.computeLineDistances();
+            marsTransferGlow.geometry.dispose();
+            marsTransferGlow.geometry = new THREE.BufferGeometry().setFromPoints(transferPts);
+            const showMarsTransfer = activeView === 'earth-mars' || activeView === 'solar-system';
+            marsTransferLine.visible = showMarsTransfer;
+            marsTransferGlow.visible = showMarsTransfer;
 
             // ── Update Moon ──
             const moonKm = getMoonPos(simDay);
@@ -1270,7 +1594,7 @@
             // ── Sun orbital motion (Earth orbits Sun in 365.25 days) ──
             const sunAngularVel = (2 * Math.PI) / (365.25 * 86400); // rad/s
             sunAngle += sunAngularVel * dt * (speedMult > 1 ? speedMult : 1);
-            const sunDist = 350;
+            const sunDist = EXISTING_EARTH_SOLAR_DISTANCE;
             sunDir.position.set(
                 Math.cos(sunAngle) * sunDist,
                 80,
@@ -1295,9 +1619,16 @@
                     const offset = camera.position.clone().sub(controls.target);
                     controls.target.copy(orionSc);
                     camera.position.copy(orionSc).add(offset);
-                } else if (cameraMode === 'overview') {
+                } else if (cameraMode === 'earth-moon') {
                     const mid = moonGroup.position.clone().multiplyScalar(0.45);
                     mid.y = 0;
+                    const offset = camera.position.clone().sub(controls.target);
+                    controls.target.copy(mid);
+                    camera.position.copy(mid).add(offset);
+                } else if (cameraMode === 'earth-mars') {
+                    const earthWorld = earthSolarPos.clone().add(SOLAR_CENTER);
+                    const marsWorld = marsSolarPos.clone().add(SOLAR_CENTER);
+                    const mid = earthWorld.clone().lerp(marsWorld, 0.5);
                     const offset = camera.position.clone().sub(controls.target);
                     controls.target.copy(mid);
                     camera.position.copy(mid).add(offset);
@@ -1310,6 +1641,9 @@
             earthLabel.lookAt(camera.position);
             moonLabel.lookAt(camera.position);
             orionLabel.lookAt(camera.position);
+            for (const name in solarPlanets) {
+                solarPlanets[name].label.lookAt(camera.position);
+            }
 
             // ═══ HUD UPDATE — uses simDay during simulation/scrub ═══
             const hudDay = (scrubDay !== null || speedMult > 1) ? simDay : realDay;
@@ -1392,12 +1726,19 @@
             composer.setSize(innerWidth, innerHeight);
         });
 
-        // Start in overview mode — compute initial Moon position to place camera
+        // Start in Earth & Moon mode and seed solar-system positions
         (() => {
             const now = Date.now();
             const elapsed = now - LAUNCH_TIME;
             const t = Math.max(0, Math.min(elapsed / MISSION_DURATION_MS, 1.0));
             const day = t * MISSION_DAYS;
+            const solarInitDay = Math.max(0, elapsed / 86400000);
+
+            for (const name in solarPlanets) {
+                const planet = solarPlanets[name];
+                planet.group.position.copy(getPlanetLocalPos(planet.data, solarInitDay));
+            }
+
             const moonKm = getMoonPos(day);
             moonGroup.position.set(moonKm.x * SCALE, moonKm.y * SCALE, moonKm.z * SCALE);
             const mid = moonGroup.position.clone().multiplyScalar(0.45);
@@ -1405,7 +1746,10 @@
             camera.position.set(mid.x, 100, mid.z + 60);
             controls.target.copy(mid);
             controls.update();
-            cameraMode = 'overview';
+            cameraMode = 'earth-moon';
+            activeView = 'earth-moon';
+            document.getElementById('btn-earth-moon').classList.add('active');
+            updatePlaybackButton();
         })();
 
         setTimeout(() => {
