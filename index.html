@@ -373,6 +373,7 @@
         const LAUNCH_TIME = Date.UTC(2026, 3, 1, 22, 35, 0);
         const MISSION_DAYS = 10;
         const MISSION_DURATION_MS = MISSION_DAYS * 86400000;
+        const J2000_MS = Date.UTC(2000, 0, 1, 12, 0, 0); // J2000.0 epoch
 
         // Real scale for bodies — only Orion is exaggerated
         const eR = EARTH_RADIUS_KM * SCALE;  // ~1.59
@@ -1333,8 +1334,11 @@
             ]);
             emLine.computeLineDistances();
 
-            // ── Earth rotation (one full turn per day, driven by simDay) ──
-            earthMesh.rotation.y = simDay * 2 * Math.PI;
+            // ── Earth rotation (GMST-based, correct continent orientation) ──
+            const simMs = LAUNCH_TIME + simDay * 86400000;
+            const dJ2000 = (simMs - J2000_MS) / 86400000;
+            const gmstDeg = (280.46061837 + 360.98564736629 * dJ2000) % 360;
+            earthMesh.rotation.y = -gmstDeg * Math.PI / 180;
 
             // ── Sun orbital motion (driven by simDay, from JPL initial angle) ──
             const sunAngle = SUN_INIT_ANGLE + simDay * (2 * Math.PI / 365.25);
