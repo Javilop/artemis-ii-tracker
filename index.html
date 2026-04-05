@@ -82,10 +82,22 @@
         .timeline-header {
             display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;
         }
+        .timeline-title-group {
+            display: flex; align-items: center; gap: 8px;
+        }
         .timeline-title {
             font-size: 9px; font-weight: 700; letter-spacing: 2px;
             text-transform: uppercase; color: rgba(255,255,255,0.3);
         }
+        .timeline-reset {
+            font-size: 8px; font-weight: 600; letter-spacing: 1px;
+            text-transform: uppercase; color: #6ec6ff;
+            background: rgba(110,198,255,0.1); border: 1px solid rgba(110,198,255,0.25);
+            border-radius: 6px; padding: 3px 8px; cursor: pointer;
+            display: none; pointer-events: auto;
+            transition: background 0.2s;
+        }
+        .timeline-reset:hover { background: rgba(110,198,255,0.25); }
         .timeline-met {
             font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; color: #6ec6ff;
         }
@@ -255,6 +267,7 @@
             }
             .timeline-header { margin-bottom: 8px; }
             .timeline-title { font-size: 8px; }
+            .timeline-reset { font-size: 7px; padding: 2px 6px; }
             .timeline-met { font-size: 11px; }
             .phase-label { font-size: 7px; }
         }
@@ -306,7 +319,10 @@
     <div id="timeline">
         <div class="timeline-bar">
             <div class="timeline-header">
-                <div class="timeline-title">Mission Time</div>
+                <div class="timeline-title-group">
+                    <div class="timeline-title">Mission Time</div>
+                    <button class="timeline-reset" id="timeline-reset-btn" onclick="resetToLive()">Reset</button>
+                </div>
                 <div class="timeline-met" id="met-display">—</div>
             </div>
             <div class="progress-track">
@@ -362,6 +378,7 @@
         import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 
         // ═══════════════════════════════════════════
         // CONSTANTS
@@ -523,7 +540,8 @@
 
         // Convert Horizons EME2000 [X,Y,Z] → Three.js [X,Z,Y] (Y-up)
         function horizonsToThree(d) {
-            return new THREE.Vector3(d[0], d[2], d[1]);
+            // EME2000 [X,Y,Z] → Three.js [X,Z,-Y] (right-handed Y-up)
+            return new THREE.Vector3(d[0], d[2], -d[1]);
         }
 
         function getTrajectoryPos(day) {
@@ -606,7 +624,7 @@
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.dampingFactor = 0.06;
-        controls.minDistance = 0.5;
+        controls.minDistance = 0.01;
         controls.maxDistance = 1200;
         controls.target.set(44, 0, -15);
 
@@ -715,14 +733,14 @@
                     vec3 viewDir = normalize(cameraPosition - vWorldPos);
                     float rim = 1.0 - max(0.0, dot(viewDir, vNormal));
                     float intensity = coeff * pow(rim, power);
-                    gl_FragColor = vec4(glowColor, intensity * 0.55);
+                    gl_FragColor = vec4(glowColor, intensity * 0.35);
                 }
             `
         });
         earthGroup.add(new THREE.Mesh(atmosGeo, atmosMat));
 
         // Outer glow halo (large for overview visibility)
-        const outerGlowGeo = new THREE.SphereGeometry(eR * 2.5, 32, 16);
+        const outerGlowGeo = new THREE.SphereGeometry(eR * 1.8, 32, 16);
         const outerGlowMat = new THREE.ShaderMaterial({
             transparent: true, side: THREE.BackSide, depthWrite: false,
             uniforms: { glowColor: { value: new THREE.Color(0x2266dd) } },
@@ -743,7 +761,7 @@
                     vec3 viewDir = normalize(cameraPosition - vWorldPos);
                     float rim = max(0.0, dot(viewDir, vNormal));
                     float intensity = pow(rim, 2.0);
-                    gl_FragColor = vec4(glowColor, intensity * 0.25);
+                    gl_FragColor = vec4(glowColor, intensity * 0.12);
                 }
             `
         });
@@ -787,19 +805,25 @@
             emissiveIntensity: 0.15
         });
 
-        textureLoader.load(
+        // Try multiple sources for Moon texture
+        const moonTexUrls = [
+            'https://cdn.jsdelivr.net/npm/three-globe@2.31.1/example/img/lunar-surface.jpg',
             'https://unpkg.com/three-globe@2.31.1/example/img/lunar-surface.jpg',
-            (tex) => {
+            'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/moon_1024.jpg'
+        ];
+        (function tryMoonTex(i) {
+            if (i >= moonTexUrls.length) return;
+            textureLoader.load(moonTexUrls[i], (tex) => {
                 moonMat.map = tex;
                 moonMat.color.set(0xcccccc);
                 moonMat.needsUpdate = true;
-            }
-        );
+            }, undefined, () => tryMoonTex(i + 1));
+        })(0);
 
         moonGroup.add(new THREE.Mesh(moonGeo, moonMat));
 
         // Moon glow (extended for visibility)
-        const moonGlowGeo = new THREE.SphereGeometry(mR * 2.5, 32, 16);
+        const moonGlowGeo = new THREE.SphereGeometry(mR * 1.8, 32, 16);
         const moonGlowMat = new THREE.ShaderMaterial({
             transparent: true, side: THREE.BackSide, depthWrite: false,
             uniforms: { glowColor: { value: new THREE.Color(0x888899) } },
@@ -819,7 +843,7 @@
                 void main() {
                     vec3 viewDir = normalize(cameraPosition - vWorldPos);
                     float rim = max(0.0, dot(viewDir, vNormal));
-                    gl_FragColor = vec4(glowColor, pow(rim, 1.5) * 0.3);
+                    gl_FragColor = vec4(glowColor, pow(rim, 1.5) * 0.12);
                 }
             `
         });
@@ -946,44 +970,22 @@
         // ═══════════════════════════════════════════
         const orionGroup = new THREE.Group();
 
-        // Capsule (100x smaller than before — realistic relative to Earth)
-        const OS = 0.01; // Orion scale factor (100x reduction)
-        const capsule = new THREE.Mesh(
-            new THREE.ConeGeometry(0.5 * OS, 1.4 * OS, 8),
-            new THREE.MeshStandardMaterial({
-                color: 0xeeeeee, emissive: 0xffffff, emissiveIntensity: 0.5,
-                roughness: 0.3, metalness: 0.7
-            })
-        );
-        capsule.rotation.x = Math.PI;
-        orionGroup.add(capsule);
-
-        // Service module
-        const svcMod = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.44 * OS, 0.5 * OS, 1.0 * OS, 8),
-            new THREE.MeshStandardMaterial({
-                color: 0xcccccc, emissive: 0x444444, emissiveIntensity: 0.2,
-                roughness: 0.4, metalness: 0.6
-            })
-        );
-        svcMod.position.y = 1.2 * OS;
-        orionGroup.add(svcMod);
-
-        // Solar array wings
-        const panelMat = new THREE.MeshStandardMaterial({
-            color: 0x1a3a7a, emissive: 0x1133aa, emissiveIntensity: 0.6,
-            roughness: 0.2, metalness: 0.8, side: THREE.DoubleSide
+        // Load Orion 3D model (CC BY 4.0 — DeltaX / Cults3D)
+        const stlLoader = new STLLoader();
+        stlLoader.load('OrionFull.stl', (geo) => {
+            geo.computeVertexNormals();
+            geo.center();
+            const orionMesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
+                color: 0xc0c0cc, roughness: 0.35, metalness: 0.65,
+                emissive: 0x334455, emissiveIntensity: 0.3
+            }));
+            // STL is in mm (~338mm wide). Scale to ~0.06 scene units
+            const s = 0.00018;
+            orionMesh.scale.set(s, s, s);
+            // STL Z-up → Three.js Y-up
+            orionMesh.rotation.x = -Math.PI / 2;
+            orionGroup.add(orionMesh);
         });
-        for (let i = 0; i < 4; i++) {
-            const panel = new THREE.Mesh(new THREE.PlaneGeometry(2.8 * OS, 0.5 * OS), panelMat);
-            panel.position.set(
-                Math.cos(i * Math.PI / 2) * 2.0 * OS,
-                1.2 * OS,
-                Math.sin(i * Math.PI / 2) * 2.0 * OS
-            );
-            panel.lookAt(0, 1.2 * OS, 0);
-            orionGroup.add(panel);
-        }
 
         // Engine glow (small but visible)
         const engineGlow = new THREE.PointLight(0xff6b35, 2, 3);
@@ -998,6 +1000,7 @@
         orionGroup.add(beacon);
 
         // Beacon sprite — this is what makes Orion visible from afar
+        let beaconSprite;
         (() => {
             const c = document.createElement('canvas');
             c.width = 128; c.height = 128;
@@ -1010,11 +1013,11 @@
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, 128, 128);
             const tex = new THREE.CanvasTexture(c);
-            const sp = new THREE.Sprite(new THREE.SpriteMaterial({
+            beaconSprite = new THREE.Sprite(new THREE.SpriteMaterial({
                 map: tex, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false
             }));
-            sp.scale.set(1.5, 1.5, 1);
-            orionGroup.add(sp);
+            beaconSprite.scale.set(1.5, 1.5, 1);
+            orionGroup.add(beaconSprite);
         })();
 
         const orionLight = new THREE.PointLight(0xffffff, 0.3, 5);
@@ -1030,9 +1033,9 @@
         // LIGHTING
         // ═══════════════════════════════════════════
         // Sun direction from JPL Horizons: geocentric EME2000, 2026-Apr-01
-        // X=1.4676e8, Y=2.596e7, Z=1.125e7 km → horizonsToThree → [X,Z,Y]
-        // Normalized direction: [0.982, 0.075, 0.174]
-        const SUN_INIT_ANGLE = Math.atan2(0.1737, 0.982); // ~10° in XZ plane
+        // X=1.4676e8, Y=2.596e7, Z=1.125e7 km → horizonsToThree → [X,Z,-Y]
+        // Normalized direction: [0.982, 0.075, -0.174]
+        const SUN_INIT_ANGLE = Math.atan2(-0.1737, 0.982); // ~-10° in XZ plane
         const SUN_ELEVATION = 26;  // Y component: 0.075 * 350
         const SUN_LIGHT_DIST = 350;
         const SUN_SPRITE_DIST = 580;
@@ -1151,7 +1154,8 @@
             controls.enabled = true;
             const mid = moonGroup.position.clone().multiplyScalar(0.45);
             mid.y = 0;
-            targetPos = new THREE.Vector3(mid.x, 100, mid.z + 60);
+            const dir = mid.clone().normalize();
+            targetPos = new THREE.Vector3(mid.x + dir.x * 60, 100, mid.z + dir.z * 60);
             targetLook = mid.clone();
         };
 
@@ -1218,6 +1222,20 @@
             document.getElementById('btn-sim').textContent = 'Simulate Travel';
             document.getElementById('btn-reset').style.display = 'none';
             document.getElementById('sim-slider-wrap').classList.remove('visible');
+            document.getElementById('timeline-reset-btn').style.display = 'none';
+        };
+
+        // Reset timeline to live (from scrub or simulation)
+        window.resetToLive = () => {
+            speedMult = 1;
+            simStartReal = null;
+            simStartDay = null;
+            scrubDay = null;
+            document.getElementById('btn-sim').classList.remove('sim-active');
+            document.getElementById('btn-sim').textContent = 'Simulate Travel';
+            document.getElementById('btn-reset').style.display = 'none';
+            document.getElementById('sim-slider-wrap').classList.remove('visible');
+            document.getElementById('timeline-reset-btn').style.display = 'none';
         };
 
         // Timeline scrub — user drags the mission timeline slider
@@ -1228,6 +1246,7 @@
             // Slider 0-10000 maps to TLI_DAY → MISSION_DAYS
             scrubDay = TLI_DAY + (val / 10000) * (MISSION_DAYS - TLI_DAY);
             scrubbing = true;
+            document.getElementById('timeline-reset-btn').style.display = 'inline-block';
             // Pause any running simulation
             if (speedMult > 1) {
                 simStartReal = null;
@@ -1313,9 +1332,13 @@
             ).normalize();
             orionGroup.lookAt(orionSc.clone().add(dir.clone().multiplyScalar(SCALE)));
 
-            // Beacon pulse
-            beacon.material.opacity = 0.7 + 0.3 * Math.sin(now * 0.006);
-            engineGlow.intensity = 2 + Math.sin(now * 0.004) * 1;
+            // Beacon pulse — fade out when camera is close
+            const camDist = camera.position.distanceTo(orionGroup.position);
+            const fadeFar = Math.min(1, camDist / 2); // full at dist>2, fades to 0 when close
+            beacon.material.opacity = fadeFar * (0.7 + 0.3 * Math.sin(now * 0.006));
+            engineGlow.intensity = fadeFar * (2 + Math.sin(now * 0.004) * 1);
+            orionLight.intensity = fadeFar * 0.3;
+            if (beaconSprite) beaconSprite.material.opacity = fadeFar * 0.85;
 
             // ── Traveled trajectory ──
             // trajPts maps data indices TLI_INDEX..TRAJ_N-1, 10 subdivisions each
@@ -1338,10 +1361,10 @@
             const simMs = LAUNCH_TIME + simDay * 86400000;
             const dJ2000 = (simMs - J2000_MS) / 86400000;
             const gmstDeg = (280.46061837 + 360.98564736629 * dJ2000) % 360;
-            earthMesh.rotation.y = -gmstDeg * Math.PI / 180;
+            earthMesh.rotation.y = gmstDeg * Math.PI / 180;
 
             // ── Sun orbital motion (driven by simDay, from JPL initial angle) ──
-            const sunAngle = SUN_INIT_ANGLE + simDay * (2 * Math.PI / 365.25);
+            const sunAngle = SUN_INIT_ANGLE - simDay * (2 * Math.PI / 365.25);
             sunDir.position.set(
                 Math.cos(sunAngle) * SUN_LIGHT_DIST,
                 SUN_ELEVATION,
@@ -1480,7 +1503,8 @@
             moonGroup.position.set(moonKm.x * SCALE, moonKm.y * SCALE, moonKm.z * SCALE);
             const mid = moonGroup.position.clone().multiplyScalar(0.45);
             mid.y = 0;
-            camera.position.set(mid.x, 100, mid.z + 60);
+            const dir = mid.clone().normalize();
+            camera.position.set(mid.x + dir.x * 60, 100, mid.z + dir.z * 60);
             controls.target.copy(mid);
             controls.update();
             cameraMode = 'overview';
