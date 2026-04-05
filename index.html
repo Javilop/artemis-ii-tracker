@@ -74,6 +74,72 @@
             position: fixed; bottom: 28px; right: 32px; z-index: 10;
             pointer-events: auto; width: 340px;
         }
+        .timeline-icon-row {
+            position: absolute;
+            top: -46px;
+            right: 14px;
+            display: flex;
+            gap: 8px;
+            z-index: 2;
+        }
+        #btn-observer-angle,
+        #btn-zoom-in,
+        #btn-zoom-out,
+        #btn-play-pause {
+            width: 36px;
+            height: 36px;
+            min-width: 0;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            position: static;
+        }
+        #btn-observer-angle .hint-btn-icon {
+            width: 17px;
+            height: 17px;
+        }
+        .timeline-zoom-icon {
+            width: 15px;
+            height: 15px;
+        }
+        .timeline-zoom-icon {
+            position: relative;
+            display: inline-block;
+        }
+        .timeline-zoom-icon::before,
+        .timeline-zoom-icon::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            background: currentColor;
+            border-radius: 999px;
+            transform: translate(-50%, -50%);
+        }
+        .timeline-zoom-icon::before {
+            width: 13px;
+            height: 1.8px;
+        }
+        .timeline-zoom-icon.plus::after {
+            width: 1.8px;
+            height: 13px;
+        }
+        .timeline-playback-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            font-size: 15px;
+            line-height: 1;
+            font-weight: 400;
+            color: rgba(255,255,255,0.82);
+        }
+        #btn-play-pause.is-playing .timeline-playback-icon {
+            color: #ff6b35;
+        }
         .timeline-bar {
             background: rgba(10,12,20,0.7); border: 1px solid rgba(255,255,255,0.07);
             border-radius: 14px; padding: 16px 20px;
@@ -88,6 +154,189 @@
         }
         .timeline-met {
             font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; color: #6ec6ff;
+        }
+        .timeline-date-row {
+            display: flex; justify-content: space-between; align-items: center;
+            gap: 12px; margin-bottom: 12px;
+        }
+        .timeline-date-label {
+            font-size: 9px; font-weight: 700; letter-spacing: 2px;
+            text-transform: uppercase; color: rgba(255,255,255,0.3);
+        }
+        .timeline-date-input {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            color: rgba(255,255,255,0.72);
+            font-size: 11px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            padding: 7px 10px;
+            min-width: 146px;
+        }
+        .timeline-date-input::-webkit-calendar-picker-indicator {
+            filter: invert(1) opacity(0.75);
+            cursor: pointer;
+        }
+        #observerSpecs {
+            position: fixed;
+            right: 32px;
+            bottom: 154px;
+            width: 380px;
+            max-width: calc(100vw - 32px);
+            background: rgba(10,12,20,0.86);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 18px 18px 16px;
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+            z-index: 20;
+            pointer-events: auto;
+            display: none;
+        }
+        #observerSpecs.open { display: block; }
+        .observer-vantage-top {
+            margin-bottom: 12px;
+        }
+        .observer-specs-header {
+            margin-bottom: 12px;
+        }
+        .observer-specs-title {
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.72);
+        }
+        .observer-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 28px;
+            height: 28px;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 50%;
+            background: rgba(255,255,255,0.04);
+            color: rgba(255,255,255,0.62);
+            font-size: 16px;
+            line-height: 1;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .observer-close:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+        .observer-row {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+        .observer-label {
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.34);
+        }
+        #vantagePoint,
+        #observer-json {
+            width: 100%;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.04);
+            color: rgba(255,255,255,0.86);
+            font-family: 'Inter', sans-serif;
+            border-radius: 10px;
+            outline: none;
+        }
+        #vantagePoint {
+            padding: 10px 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        #observer-json {
+            min-height: 270px;
+            resize: vertical;
+            padding: 12px 13px;
+            font-size: 11px;
+            line-height: 1.55;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+        .observer-specs-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin: 6px 0 12px;
+        }
+        #btn-hide-observer-specs {
+            margin: 0;
+        }
+        .observer-specs-toggle-wrap.hidden {
+            display: none;
+        }
+        #observer-specs-advanced {
+            display: none;
+        }
+        #observer-specs-advanced.open {
+            display: block;
+        }
+        .observer-note-wrap {
+            margin-bottom: 10px;
+        }
+        .observer-actions {
+            display: flex;
+            justify-content: flex-start;
+            gap: 8px;
+            align-items: center;
+        }
+        .observer-note {
+            font-size: 11px;
+            line-height: 1.4;
+            color: rgba(255,255,255,0.42);
+        }
+        .observer-btn-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .observer-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            height: 36px;
+            min-height: 36px;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.05);
+            color: rgba(255,255,255,0.82);
+            border-radius: 10px;
+            padding: 0 12px;
+            line-height: 1;
+            font-size: 11px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .observer-btn:hover {
+            background: rgba(255,255,255,0.11);
+            color: #fff;
+        }
+        .observer-btn.sim-active {
+            background: rgba(255,107,53,0.16);
+            border-color: rgba(255,107,53,0.3);
+            color: #ff9a70;
+        }
+        .observer-btn.primary {
+            background: rgba(110,198,255,0.14);
+            border-color: rgba(110,198,255,0.28);
+            color: #8cd4ff;
+        }
+        .observer-btn.primary:hover {
+            background: rgba(110,198,255,0.2);
+            color: #c3ebff;
         }
         .progress-track {
             width: 100%; position: relative; margin-bottom: 12px;
@@ -135,6 +384,15 @@
             color: rgba(255,255,255,0.45); font-size: 11px; font-weight: 500;
             font-family: 'Inter', sans-serif;
             cursor: pointer; backdrop-filter: blur(24px); transition: all 0.3s;
+        }
+        .hint-btn.icon-btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .hint-btn-icon {
+            width: 13px; height: 13px; display: inline-block; flex: 0 0 auto;
+        }
+        .hint-btn-icon svg {
+            width: 100%; height: 100%; display: block;
         }
         .hint-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
         .hint-btn.active {
@@ -220,7 +478,7 @@
     <div id="hud">
         <div id="hud-left">
             <div class="mission-title">NASA &middot; CSA</div>
-            <div class="mission-name">ARTEMIS II</div>
+            <div class="mission-name" id="mission-name">ARTEMIS II</div>
             <div class="mission-status">
                 <div class="status-dot"></div>
                 <span id="phase-text">In Transit to Moon</span>
@@ -252,12 +510,36 @@
     </div>
 
     <div id="timeline">
+        <div class="timeline-icon-row">
+            <button class="hint-btn icon-btn" id="btn-observer-angle" onclick="openObserverSpecs()" aria-label="Open observer specs">
+                <span class="hint-btn-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 8h3l1.7-2h6.6L17 8h3a2 2 0 0 1 2 2v7a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3v-7a2 2 0 0 1 2-2Z"></path>
+                        <circle cx="12" cy="13" r="4"></circle>
+                    </svg>
+                </span>
+            </button>
+            <button class="hint-btn icon-btn" id="btn-zoom-in" onclick="zoomIn()" aria-label="Zoom in">
+                <span class="timeline-zoom-icon plus" aria-hidden="true"></span>
+            </button>
+            <button class="hint-btn icon-btn" id="btn-zoom-out" onclick="zoomOut()" aria-label="Zoom out">
+                <span class="timeline-zoom-icon minus" aria-hidden="true"></span>
+            </button>
+            <button class="hint-btn icon-btn" id="btn-play-pause" onclick="togglePlayback()" aria-label="Pause playback">
+                <span class="timeline-playback-icon" aria-hidden="true">&#10074;&#10074;</span>
+            </button>
+        </div>
         <div class="timeline-bar">
             <div class="timeline-header">
-                <div class="timeline-title">Mission Time</div>
+                <div class="timeline-title" id="timeline-title-text">Mission Time</div>
                 <div class="timeline-met" id="met-display">—</div>
             </div>
-            <div class="progress-track">
+            <div class="timeline-date-row">
+                <label class="timeline-date-label" for="planet-date-input">Planet Date</label>
+                <input class="timeline-date-input" type="date" id="planet-date-input"
+                       onchange="onPlanetDateChange(this.value)">
+            </div>
+            <div class="progress-track" id="progress-track">
                 <input type="range" class="timeline-slider" id="timeline-slider"
                        min="0" max="10000" value="0"
                        oninput="onTimelineScrub(this.value)">
@@ -273,15 +555,57 @@
         </div>
     </div>
 
+    <div id="observerSpecs" aria-hidden="true">
+        <button class="observer-close" onclick="closeObserverSpecs()" aria-label="Close observer specs">&times;</button>
+        <div class="observer-specs-header">
+            <div class="observer-specs-title">Vantage Point</div>
+        </div>
+        <div class="observer-row observer-vantage-top">
+            <select id="vantagePoint" onchange="onVantagePointChange(this.value)">
+                <option>From Space</option>
+                <option>From Sun</option>
+                <option>From Mercury</option>
+                <option>From Venus</option>
+                <option>From Earth</option>
+                <option>From Moon</option>
+                <option>From Mars</option>
+                <option>From Astroid Belt</option>
+                <option>From Jupiter</option>
+                <option>From Saturn</option>
+                <option>From Uranus</option>
+                <option>From Neptune</option>
+            </select>
+        </div>
+        <div class="observer-specs-toggle-wrap" id="observer-specs-toggle-wrap">
+            <button class="observer-btn observer-specs-toggle" id="btn-toggle-observer-specs" onclick="toggleObserverSpecsEditor()">Change Specs</button>
+        </div>
+        <div id="observer-specs-advanced" aria-hidden="true">
+            <div class="observer-row">
+                <label class="observer-label" for="observer-json">Observer JSON</label>
+                <textarea id="observer-json" spellcheck="false"></textarea>
+            </div>
+            <div class="observer-note-wrap">
+                <div class="observer-note">Edit the JSON, then apply it to move the current observer angle.</div>
+            </div>
+            <div class="observer-actions">
+                <div class="observer-btn-row">
+                    <button class="observer-btn observer-specs-toggle" id="btn-hide-observer-specs" onclick="closeObserverSpecs()">Close</button>
+                    <button class="observer-btn" id="btn-copy-observer-json" onclick="copyObserverJson()">Copy JSON</button>
+                    <button class="observer-btn primary" onclick="applyObserverSpecs()">Apply View</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="controls-hint">
         <button class="hint-btn" id="btn-follow" onclick="toggleFollow()">Follow Orion</button>
         <button class="hint-btn" onclick="focusEarth()">Focus Earth</button>
         <button class="hint-btn" onclick="focusMoon()">Focus Moon</button>
         <button class="hint-btn" id="btn-earth-moon" onclick="focusEarthMoon()">Earth &amp; Moon</button>
-        <button class="hint-btn" id="btn-earth-mars" onclick="focusEarthMars()">Earth &amp; Mars</button>
         <button class="hint-btn" id="btn-solar-system" onclick="focusSolarSystem()">Solar System</button>
+        <button class="hint-btn" id="btn-mars-2033" onclick="focusMars2033()">Mars 2033</button>
         <div class="sim-group">
-            <button class="hint-btn" id="btn-sim" onclick="toggleSimMenu()">Simulate Travel</button>
+            <button class="hint-btn" id="btn-sim" onclick="toggleSimMenu()">Accelerate</button>
             <div class="sim-dropdown" id="sim-dropdown">
                 <button class="sim-opt" onclick="setSpeed(1000)">1,000x</button>
                 <button class="sim-opt" onclick="setSpeed(5000)">5,000x</button>
@@ -293,7 +617,6 @@
             </div>
         </div>
         <button class="hint-btn" id="btn-reset" onclick="resetRealTime()" style="display:none">Reset to Real Time</button>
-        <button class="hint-btn" id="btn-play-pause" onclick="togglePlayback()" aria-label="Pause playback">&#10074;&#10074; Pause</button>
         <div class="sim-slider-wrap" id="sim-slider-wrap">
             <input type="range" id="sim-slider" min="0" max="100" value="25"
                    oninput="onSliderChange(this.value)">
@@ -323,9 +646,12 @@
         const MOON_RADIUS_KM = 1737;
         const EARTH_MOON_DIST_KM = 384400;
         const SCALE = 1 / 4000; // 1 unit = 4000 km
+        const AU_KM = 149597870.7;
+        const MS_PER_DAY = 86400000;
+        const JD_J2000 = 2451545.0;
         const LAUNCH_TIME = Date.UTC(2026, 3, 1, 22, 35, 0);
         const MISSION_DAYS = 10;
-        const MISSION_DURATION_MS = MISSION_DAYS * 86400000;
+        const MISSION_DURATION_MS = MISSION_DAYS * MS_PER_DAY;
 
         // Real scale for bodies — only Orion is exaggerated
         const eR = EARTH_RADIUS_KM * SCALE;  // ~1.59
@@ -333,26 +659,66 @@
         const emDist = EARTH_MOON_DIST_KM * SCALE; // ~96.1
 
         // Solar-system view data
-        // Source for radii, semimajor axes, and sidereal periods:
-        // NASA NSSDCA planetary fact sheets / fact table
+        // Sources:
+        // - JPL SSD "Approximate Positions of the Planets" for heliocentric elements and rates
+        // - NASA NSSDCA planetary fact sheets for display radii
         const EXISTING_SUN_SPRITE_POS = new THREE.Vector3(500, 0, -250);
         const SOLAR_CENTER = new THREE.Vector3(EXISTING_SUN_SPRITE_POS.x, 0, EXISTING_SUN_SPRITE_POS.z);
-        const EXISTING_EARTH_SOLAR_DISTANCE = Math.hypot(SOLAR_CENTER.x, SOLAR_CENTER.z);
-        const SOLAR_ORBIT_SCALE = EXISTING_EARTH_SOLAR_DISTANCE / 149598262;
+        const SOLAR_ORBIT_SCALE = SCALE;
         const SOLAR_PLANET_RADIUS_SCALE = 1 / 6000;  // visibility scale for planet sizes
+        const SOLAR_STAR_SCALE = 250;
+        const SOLAR_ORBIT_TUBE_MIN = 12;
+        const SOLAR_ORBIT_TUBE_MAX = 38;
+        const DEFAULT_SOLAR_DATE = new Date();
+        const DEFAULT_SOLAR_DATE_MS = Date.UTC(
+            DEFAULT_SOLAR_DATE.getUTCFullYear(),
+            DEFAULT_SOLAR_DATE.getUTCMonth(),
+            DEFAULT_SOLAR_DATE.getUTCDate(),
+            12, 0, 0
+        );
         const MIN_SIM_SPEED = 500;
         const MAX_SIM_SPEED = 10000000;
-        const MARS_TRANSFER_DAYS = 520;
-        const MARS_RETURN_DAYS = 320;
+        const MARS_2033_DEPART_EARTH_MS = Date.UTC(2033, 3, 15, 12, 0, 0);
+        const MARS_2033_ARRIVE_MARS_MS = Date.UTC(2033, 11, 30, 12, 0, 0);
+        const MARS_2033_DEPART_MARS_MS = Date.UTC(2035, 4, 1, 12, 0, 0);
+        const MARS_2033_RETURN_EARTH_MS = Date.UTC(2036, 0, 15, 12, 0, 0);
+        const MARS_2033_MISSION_DURATION_MS = MARS_2033_RETURN_EARTH_MS - MARS_2033_DEPART_EARTH_MS;
+        const MARS_2033_MISSION_DAYS = MARS_2033_MISSION_DURATION_MS / MS_PER_DAY;
+        const MARS_2033_INITIAL_CAMERA_POS = new THREE.Vector3(51888.875, 31961.696, 95055.78);
+        const MARS_2033_INITIAL_CAMERA_TARGET = new THREE.Vector3(8178.805, -290.665, 6261.027);
         const solarSystemData = [
-            { name: 'Mercury', radiusKm: 2439.7, orbitKm: 57909227, periodDays: 87.969, color: 0xb7b0a5, phase: 4.85, orbitColor: 0x7f7a72, label: '#d0c9bd' },
-            { name: 'Venus', radiusKm: 6051.8, orbitKm: 108209475, periodDays: 224.701, color: 0xd7b37c, phase: 2.3, orbitColor: 0x9d7f59, label: '#f1d1a5' },
-            { name: 'Earth', radiusKm: 6371.0, orbitKm: 149598262, periodDays: 365.256, color: 0x4d90ff, phase: 0.5, orbitColor: 0x2f6fd4, label: '#70a8ff' },
-            { name: 'Mars', radiusKm: 3389.5, orbitKm: 227943824, periodDays: 686.980, color: 0xc65b38, phase: 1.3, orbitColor: 0x914129, label: '#f08b69' },
-            { name: 'Jupiter', radiusKm: 69911, orbitKm: 778340821, periodDays: 4332.59, color: 0xc9a67b, phase: 5.2, orbitColor: 0x85684a, label: '#e4c7a5' },
-            { name: 'Saturn', radiusKm: 58232, orbitKm: 1426666422, periodDays: 10759.22, color: 0xd7c28b, phase: 5.85, orbitColor: 0x8c7b4d, label: '#efddb1', hasRings: true },
-            { name: 'Uranus', radiusKm: 25362, orbitKm: 2870658186, periodDays: 30688.5, color: 0x8ad7e0, phase: 3.5, orbitColor: 0x4b8891, label: '#adeff6' },
-            { name: 'Neptune', radiusKm: 24622, orbitKm: 4498396441, periodDays: 60182, color: 0x4b6cff, phase: 4.05, orbitColor: 0x3047aa, label: '#87a0ff' }
+            {
+                name: 'Mercury', radiusKm: 2439.7, color: 0xb7b0a5, orbitColor: 0x7f7a72, label: '#d0c9bd',
+                elements: { a0: 0.38709843, a1: 0.00000000, e0: 0.20563661, e1: 0.00002123, I0: 7.00559432, I1: -0.00590158, L0: 252.25166724, L1: 149472.67486623, lp0: 77.45771895, lp1: 0.15940013, node0: 48.33961819, node1: -0.12214182, b: 0, c: 0, s: 0, f: 0 }
+            },
+            {
+                name: 'Venus', radiusKm: 6051.8, color: 0xd7b37c, orbitColor: 0x9d7f59, label: '#f1d1a5',
+                elements: { a0: 0.72332102, a1: -0.00000026, e0: 0.00676399, e1: -0.00005107, I0: 3.39777545, I1: 0.00043494, L0: 181.97970850, L1: 58517.81560260, lp0: 131.76755713, lp1: 0.05679648, node0: 76.67261496, node1: -0.27274174, b: 0, c: 0, s: 0, f: 0 }
+            },
+            {
+                name: 'Earth', radiusKm: 6371.0, color: 0x4d90ff, orbitColor: 0x2f6fd4, label: '#70a8ff',
+                elements: { a0: 1.00000018, a1: -0.00000003, e0: 0.01673163, e1: -0.00003661, I0: -0.00054346, I1: -0.01337178, L0: 100.46691572, L1: 35999.37306329, lp0: 102.93005885, lp1: 0.31795260, node0: -5.11260389, node1: -0.24123856, b: 0, c: 0, s: 0, f: 0 }
+            },
+            {
+                name: 'Mars', radiusKm: 3389.5, color: 0xc65b38, orbitColor: 0x914129, label: '#f08b69',
+                elements: { a0: 1.52371243, a1: 0.00000097, e0: 0.09336511, e1: 0.00009149, I0: 1.85181869, I1: -0.00724757, L0: -4.56813164, L1: 19140.29934243, lp0: -23.91744784, lp1: 0.45223625, node0: 49.71320984, node1: -0.26852431, b: 0, c: 0, s: 0, f: 0 }
+            },
+            {
+                name: 'Jupiter', radiusKm: 69911, color: 0xc9a67b, orbitColor: 0x85684a, label: '#e4c7a5',
+                elements: { a0: 5.20248019, a1: -0.00002864, e0: 0.04853590, e1: 0.00018026, I0: 1.29861416, I1: -0.00322699, L0: 34.33479152, L1: 3034.90371757, lp0: 14.27495244, lp1: 0.18199196, node0: 100.29282654, node1: 0.13024619, b: -0.00012452, c: 0.06064060, s: -0.35635438, f: 38.35125000 }
+            },
+            {
+                name: 'Saturn', radiusKm: 58232, color: 0xd7c28b, orbitColor: 0x8c7b4d, label: '#efddb1', hasRings: true,
+                elements: { a0: 9.54149883, a1: -0.00003065, e0: 0.05550825, e1: -0.00032044, I0: 2.49424102, I1: 0.00451969, L0: 50.07571329, L1: 1222.11494724, lp0: 92.86136063, lp1: 0.54179478, node0: 113.63998702, node1: -0.25015002, b: 0.00025899, c: -0.13434469, s: 0.87320147, f: 38.35125000 }
+            },
+            {
+                name: 'Uranus', radiusKm: 25362, color: 0x8ad7e0, orbitColor: 0x4b8891, label: '#adeff6',
+                elements: { a0: 19.18797948, a1: -0.00020455, e0: 0.04685740, e1: -0.00001550, I0: 0.77298127, I1: -0.00180155, L0: 314.20276625, L1: 428.49512595, lp0: 172.43404441, lp1: 0.09266985, node0: 73.96250215, node1: 0.05739699, b: 0.00058331, c: -0.97731848, s: 0.17689245, f: 7.67025000 }
+            },
+            {
+                name: 'Neptune', radiusKm: 24622, color: 0x4b6cff, orbitColor: 0x3047aa, label: '#87a0ff',
+                elements: { a0: 30.06952752, a1: 0.00006447, e0: 0.00895439, e1: 0.00000818, I0: 1.77005520, I1: 0.00022400, L0: 304.22289287, L1: 218.46515314, lp0: 46.68158724, lp1: 0.01009938, node0: 131.78635853, node1: -0.00606302, b: -0.00041348, c: 0.68346318, s: -0.10162547, f: 7.67025000 }
+            }
         ];
         const solarPlanets = {};
 
@@ -563,7 +929,7 @@
         // ═══════════════════════════════════════════
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.01, 40000);
+        const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.01, 2000000);
         // Overview: above midpoint between Earth and Moon
         camera.position.set(44, 100, 60);
 
@@ -583,7 +949,7 @@
         controls.enableDamping = true;
         controls.dampingFactor = 0.06;
         controls.minDistance = 0.5;
-        controls.maxDistance = 24000;
+        controls.maxDistance = 1200000;
         controls.target.set(44, 0, -15);
 
         const textureLoader = new THREE.TextureLoader();
@@ -1059,23 +1425,125 @@
             return Math.round(Math.abs(n)).toLocaleString('en-US');
         }
 
-        function getPlanetLocalPos(planet, day) {
-            const angle = planet.phase + (day / planet.periodDays) * Math.PI * 2;
-            const r = planet.orbitKm * SOLAR_ORBIT_SCALE;
-            return new THREE.Vector3(Math.cos(angle) * r, 0, Math.sin(angle) * r);
+        function normalizeDegrees(deg) {
+            return ((deg % 360) + 360) % 360;
         }
 
-        function getPlanetWorldPos(planet, day) {
-            return getPlanetLocalPos(planet, day).add(SOLAR_CENTER);
+        function normalizeSignedDegrees(deg) {
+            const normalized = normalizeDegrees(deg);
+            return normalized > 180 ? normalized - 360 : normalized;
         }
 
-        function buildCirclePoints(radius, segments = 256) {
+        function toJulianDate(ms) {
+            return ms / MS_PER_DAY + 2440587.5;
+        }
+
+        function msToDateInputValue(ms) {
+            return new Date(ms).toISOString().slice(0, 10);
+        }
+
+        function dateInputValueToMs(value) {
+            if (!value) return DEFAULT_SOLAR_DATE_MS;
+            const [year, month, day] = value.split('-').map(Number);
+            return Date.UTC(year, month - 1, day, 12, 0, 0);
+        }
+
+        function solveKeplerDegrees(Mdeg, e) {
+            let E = Mdeg + (180 / Math.PI) * e * Math.sin(Mdeg * Math.PI / 180);
+            for (let i = 0; i < 12; i++) {
+                const deltaM = Mdeg - (E - (180 / Math.PI) * e * Math.sin(E * Math.PI / 180));
+                const deltaE = deltaM / (1 - e * Math.cos(E * Math.PI / 180));
+                E += deltaE;
+                if (Math.abs(deltaE) <= 1e-6) break;
+            }
+            return E;
+        }
+
+        function getPlanetElementsAtDate(planet, dateMs) {
+            const T = (toJulianDate(dateMs) - JD_J2000) / 36525;
+            const el = planet.elements;
+            const a = el.a0 + el.a1 * T;
+            const e = el.e0 + el.e1 * T;
+            const I = el.I0 + el.I1 * T;
+            const L = el.L0 + el.L1 * T;
+            const longPeri = el.lp0 + el.lp1 * T;
+            const longNode = el.node0 + el.node1 * T;
+            const omega = longPeri - longNode;
+            const M = normalizeSignedDegrees(
+                L - longPeri +
+                el.b * T * T +
+                el.c * Math.cos(el.f * T * Math.PI / 180) +
+                el.s * Math.sin(el.f * T * Math.PI / 180)
+            );
+
+            return { a, e, I, omega, longNode, M };
+        }
+
+        function orbitalPointToScene(xPrime, yPrime, Ideg, omegaDeg, nodeDeg) {
+            const I = Ideg * Math.PI / 180;
+            const omega = omegaDeg * Math.PI / 180;
+            const node = nodeDeg * Math.PI / 180;
+
+            const cosO = Math.cos(omega), sinO = Math.sin(omega);
+            const cosN = Math.cos(node), sinN = Math.sin(node);
+            const cosI = Math.cos(I), sinI = Math.sin(I);
+
+            const xEcl = (cosO * cosN - sinO * sinN * cosI) * xPrime +
+                (-sinO * cosN - cosO * sinN * cosI) * yPrime;
+            const yEcl = (cosO * sinN + sinO * cosN * cosI) * xPrime +
+                (-sinO * sinN + cosO * cosN * cosI) * yPrime;
+            const zEcl = (sinO * sinI) * xPrime + (cosO * sinI) * yPrime;
+
+            return new THREE.Vector3(
+                xEcl * AU_KM * SOLAR_ORBIT_SCALE,
+                zEcl * AU_KM * SOLAR_ORBIT_SCALE,
+                yEcl * AU_KM * SOLAR_ORBIT_SCALE
+            );
+        }
+
+        function getPlanetLocalPos(planet, dateMs) {
+            const { a, e, I, omega, longNode, M } = getPlanetElementsAtDate(planet, dateMs);
+            const E = solveKeplerDegrees(M, e) * Math.PI / 180;
+            const xPrime = a * (Math.cos(E) - e);
+            const yPrime = a * Math.sqrt(1 - e * e) * Math.sin(E);
+            return orbitalPointToScene(xPrime, yPrime, I, omega, longNode);
+        }
+
+        function getPlanetWorldPos(planet, dateMs) {
+            return getPlanetLocalPos(planet, dateMs).add(SOLAR_CENTER);
+        }
+
+        function buildPlanetOrbitPoints(planet, dateMs, segments = 360) {
+            const { a, e, I, omega, longNode } = getPlanetElementsAtDate(planet, dateMs);
             const pts = [];
-            for (let i = 0; i <= segments; i++) {
-                const a = (i / segments) * Math.PI * 2;
-                pts.push(new THREE.Vector3(Math.cos(a) * radius, 0, Math.sin(a) * radius));
+            for (let i = 0; i < segments; i++) {
+                const E = (i / segments) * Math.PI * 2;
+                const xPrime = a * (Math.cos(E) - e);
+                const yPrime = a * Math.sqrt(1 - e * e) * Math.sin(E);
+                pts.push(orbitalPointToScene(xPrime, yPrime, I, omega, longNode));
             }
             return pts;
+        }
+
+        function getOrbitTubeRadius(points) {
+            let maxRadius = 0;
+            for (const p of points) maxRadius = Math.max(maxRadius, p.length());
+            return Math.max(SOLAR_ORBIT_TUBE_MIN, Math.min(SOLAR_ORBIT_TUBE_MAX, maxRadius * 0.00012));
+        }
+
+        function buildOrbitTubeGeometry(points) {
+            const closedPoints = points.concat(points[0].clone());
+            const curve = new THREE.CatmullRomCurve3(closedPoints, true, 'centripetal');
+            return new THREE.TubeGeometry(curve, closedPoints.length * 2, getOrbitTubeRadius(points), 10, true);
+        }
+
+        function refreshSolarOrbitGeometry(record, dateMs) {
+            const pts = buildPlanetOrbitPoints(record.data, dateMs);
+            record.orbitLine.geometry.dispose();
+            record.orbitLine.geometry = new THREE.BufferGeometry().setFromPoints(pts);
+            record.orbitTube.geometry.dispose();
+            record.orbitTube.geometry = buildOrbitTubeGeometry(pts);
+            record.lastOrbitRefreshMs = dateMs;
         }
 
         function buildTransferSegment(start, end, height, outwardScale) {
@@ -1091,13 +1559,63 @@
             return curve.getPoints(72);
         }
 
+        function buildHoldArc(center, start, end, lift = 0) {
+            const radius = Math.max(18, start.distanceTo(center) * 0.35);
+            const startDir = start.clone().sub(center).normalize();
+            const endDir = end.clone().sub(center).normalize();
+            const arcMid = startDir.clone().add(endDir).normalize();
+            if (arcMid.lengthSq() < 1e-6) arcMid.copy(startDir.clone().cross(new THREE.Vector3(0, 1, 0)).normalize());
+            return new THREE.CatmullRomCurve3([
+                start.clone(),
+                center.clone().add(startDir.multiplyScalar(radius)).add(new THREE.Vector3(0, lift, 0)),
+                center.clone().add(arcMid.multiplyScalar(radius * 1.2)).add(new THREE.Vector3(0, lift * 1.2, 0)),
+                center.clone().add(endDir.multiplyScalar(radius)).add(new THREE.Vector3(0, lift, 0)),
+                end.clone()
+            ]).getPoints(36);
+        }
+
+        function samplePathPoints(points, t) {
+            if (!points.length) return new THREE.Vector3();
+            if (points.length === 1) return points[0].clone();
+            const clampedT = Math.max(0, Math.min(1, t));
+            const scaledIndex = clampedT * (points.length - 1);
+            const baseIndex = Math.floor(scaledIndex);
+            const nextIndex = Math.min(points.length - 1, baseIndex + 1);
+            const localT = scaledIndex - baseIndex;
+            return points[baseIndex].clone().lerp(points[nextIndex], localT);
+        }
+
+        function getMars2033VehicleLocalPos(dateMs, outboundPoints, stayPoints, returnPoints) {
+            if (dateMs <= MARS_2033_DEPART_EARTH_MS) return outboundPoints[0].clone();
+            if (dateMs < MARS_2033_ARRIVE_MARS_MS) {
+                return samplePathPoints(
+                    outboundPoints,
+                    (dateMs - MARS_2033_DEPART_EARTH_MS) / (MARS_2033_ARRIVE_MARS_MS - MARS_2033_DEPART_EARTH_MS)
+                );
+            }
+            if (dateMs < MARS_2033_DEPART_MARS_MS) {
+                return samplePathPoints(
+                    stayPoints,
+                    (dateMs - MARS_2033_ARRIVE_MARS_MS) / (MARS_2033_DEPART_MARS_MS - MARS_2033_ARRIVE_MARS_MS)
+                );
+            }
+            if (dateMs < MARS_2033_RETURN_EARTH_MS) {
+                return samplePathPoints(
+                    returnPoints,
+                    (dateMs - MARS_2033_DEPART_MARS_MS) / (MARS_2033_RETURN_EARTH_MS - MARS_2033_DEPART_MARS_MS)
+                );
+            }
+            return returnPoints[returnPoints.length - 1].clone();
+        }
+
         // ═══════════════════════════════════════════
         // SOLAR SYSTEM
         // ═══════════════════════════════════════════
+        const initialSolarOrbitDateMs = DEFAULT_SOLAR_DATE_MS;
         for (const planet of solarSystemData) {
-            const orbitRadius = planet.orbitKm * SOLAR_ORBIT_SCALE;
-            const orbitLine = new THREE.Line(
-                new THREE.BufferGeometry().setFromPoints(buildCirclePoints(orbitRadius)),
+            const initialOrbitPoints = buildPlanetOrbitPoints(planet, initialSolarOrbitDateMs);
+            const orbitLine = new THREE.LineLoop(
+                new THREE.BufferGeometry().setFromPoints(initialOrbitPoints),
                 new THREE.LineBasicMaterial({
                     color: planet.orbitColor,
                     transparent: true,
@@ -1107,13 +1625,8 @@
             orbitLine.frustumCulled = false;
             solarSystemGroup.add(orbitLine);
 
-            const orbitBandWidth = Math.max(orbitRadius * 0.024, 4);
-            const orbitBand = new THREE.Mesh(
-                new THREE.RingGeometry(
-                    Math.max(0.1, orbitRadius - orbitBandWidth * 0.5),
-                    orbitRadius + orbitBandWidth * 0.5,
-                    256
-                ),
+            const orbitTube = new THREE.Mesh(
+                buildOrbitTubeGeometry(initialOrbitPoints),
                 new THREE.MeshBasicMaterial({
                     color: planet.orbitColor,
                     transparent: true,
@@ -1122,11 +1635,12 @@
                     depthWrite: false
                 })
             );
-            orbitBand.rotation.x = Math.PI / 2;
-            orbitBand.frustumCulled = false;
-            solarSystemGroup.add(orbitBand);
+            orbitTube.frustumCulled = false;
+            solarSystemGroup.add(orbitTube);
 
             const planetGroup = new THREE.Group();
+            const planetVisual = new THREE.Group();
+            planetGroup.add(planetVisual);
             const bodyRadius = Math.max(planet.radiusKm * SOLAR_PLANET_RADIUS_SCALE, 0.5);
             const body = new THREE.Mesh(
                 new THREE.SphereGeometry(bodyRadius, 32, 16),
@@ -1136,7 +1650,19 @@
                     opacity: 0.96
                 })
             );
-            planetGroup.add(body);
+            planetVisual.add(body);
+
+            const marker = new THREE.Mesh(
+                new THREE.SphereGeometry(Math.max(bodyRadius * 2.4, 7), 18, 12),
+                new THREE.MeshBasicMaterial({
+                    color: planet.color,
+                    transparent: true,
+                    opacity: 0.9,
+                    depthWrite: false
+                })
+            );
+            marker.visible = false;
+            planetVisual.add(marker);
 
             const glow = new THREE.Mesh(
                 new THREE.SphereGeometry(bodyRadius * 3.2, 16, 12),
@@ -1147,8 +1673,9 @@
                     blending: THREE.AdditiveBlending
                 })
             );
-            planetGroup.add(glow);
+            planetVisual.add(glow);
 
+            let sprite = null;
             (() => {
                 const c = document.createElement('canvas');
                 c.width = 128; c.height = 128;
@@ -1162,7 +1689,7 @@
                 ctx.fillStyle = grad;
                 ctx.fillRect(0, 0, 128, 128);
                 const tex = new THREE.CanvasTexture(c);
-                const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+                sprite = new THREE.Sprite(new THREE.SpriteMaterial({
                     map: tex,
                     transparent: true,
                     opacity: 0.42,
@@ -1171,7 +1698,7 @@
                 }));
                 const spriteSize = Math.max(bodyRadius * 4.6, 4.5);
                 sprite.scale.set(spriteSize, spriteSize, 1);
-                planetGroup.add(sprite);
+                planetVisual.add(sprite);
             })();
 
             if (planet.hasRings) {
@@ -1186,11 +1713,12 @@
                 );
                 rings.rotation.x = Math.PI / 2;
                 rings.rotation.z = 0.55;
-                planetGroup.add(rings);
+                planetVisual.add(rings);
             }
 
             const label = createLabel(planet.name.toUpperCase(), planet.label);
-            label.position.set(0, bodyRadius + 2.2, 0);
+            const baseLabelY = bodyRadius + 2.2;
+            label.position.set(0, baseLabelY, 0);
             label.scale.set(5.2, 0.65, 1);
             planetGroup.add(label);
 
@@ -1198,52 +1726,434 @@
             solarPlanets[planet.name] = {
                 data: planet,
                 group: planetGroup,
+                visual: planetVisual,
+                body,
+                marker,
+                glow,
+                sprite,
+                bodyRadius,
+                baseLabelY,
                 label,
                 orbitLine,
-                orbitBand,
-                orbitBaseOpacity: planet.name === 'Earth' ? 0.32 : 0.18
+                orbitTube,
+                orbitBaseOpacity: planet.name === 'Earth' ? 0.32 : 0.18,
+                lastOrbitRefreshMs: initialSolarOrbitDateMs
             };
         }
 
-        const marsTransferLine = new THREE.Line(
+        const mars2033TransferLine = new THREE.Line(
             new THREE.BufferGeometry(),
             new THREE.LineDashedMaterial({
-                color: 0xff8c42,
+                color: 0x6b3fb3,
                 transparent: true,
-                opacity: 0.9,
+                opacity: 0.7,
                 dashSize: 2.5,
                 gapSize: 1.2
             })
         );
-        solarSystemGroup.add(marsTransferLine);
+        solarSystemGroup.add(mars2033TransferLine);
 
-        const marsTransferGlow = new THREE.Line(
+        const mars2033TraveledLine = new THREE.Line(
             new THREE.BufferGeometry(),
-            new THREE.LineBasicMaterial({ color: 0xff6b35, transparent: true, opacity: 0.15 })
+            new THREE.LineBasicMaterial({ color: 0xff6b35, transparent: true, opacity: 0.9 })
         );
-        solarSystemGroup.add(marsTransferGlow);
+        solarSystemGroup.add(mars2033TraveledLine);
+
+        const mars2033TransferGlow = new THREE.Line(
+            new THREE.BufferGeometry(),
+            new THREE.LineBasicMaterial({ color: 0x6b3fb3, transparent: true, opacity: 0.2 })
+        );
+        solarSystemGroup.add(mars2033TransferGlow);
+
+        const mars2033CraftGroup = new THREE.Group();
+        mars2033CraftGroup.visible = false;
+        mars2033CraftGroup.frustumCulled = false;
+
+        const mars2033Orb = new THREE.Mesh(
+            new THREE.SphereGeometry(180, 18, 18),
+            new THREE.MeshBasicMaterial({ color: 0xd7a6ff, transparent: true, opacity: 0.9 })
+        );
+        mars2033CraftGroup.add(mars2033Orb);
+
+        const mars2033CraftLabel = createLabel('MARS 2033', '#d3a8ff');
+        mars2033CraftLabel.position.set(0, 1350, 0);
+        mars2033CraftLabel.scale.set(8000, 1000, 1);
+        mars2033CraftGroup.add(mars2033CraftLabel);
+        solarSystemGroup.add(mars2033CraftGroup);
 
         // ═══════════════════════════════════════════
         // STATE & CONTROLS
         // ═══════════════════════════════════════════
-        // Camera modes: 'free', 'follow-orion', 'earth-moon', 'earth-mars', 'solar-system'
+        // Camera modes: 'free', 'follow-orion', 'earth-moon', 'solar-system', 'mars-2033'
         let cameraMode = 'free';
         let activeView = 'earth-moon';
         let speedMult = 1;
         let simStartReal = null;   // Date.now() when sim was activated
         let simStartDay = null;    // elapsed day when sim was activated
+        let solarBaseDateMs = DEFAULT_SOLAR_DATE_MS;
+        let solarSimStartDateMs = null;
         let paused = false;
         let pausedDay = null;
+        let pausedSolarDateMs = null;
+        let scrubSolarDateMs = null;
         let prevFrameTime = Date.now();
         let sunAngle = 0;          // Sun orbital angle
         let targetPos = null;
         let targetLook = null;
+        let lastPlanetDateInputValue = '';
+        let observerAngleResetTimeout = null;
+        let currentObserverVantagePoint = 'From Space';
+        let zoomForwardAmount = 0;
+
+        function getHashFocusValue() {
+            return new URLSearchParams(window.location.hash.replace(/^#/, '')).get('focus');
+        }
+
+        function setFocusHash(focus) {
+            const nextHash = `focus=${focus}`;
+            if (window.location.hash.replace(/^#/, '') === nextHash) return;
+            window.location.hash = nextHash;
+        }
+
+        function focusOrion() {
+            cameraMode = 'follow-orion';
+            syncActiveButtons();
+            controls.enabled = true;
+            const op = orionGroup.position.clone();
+            targetPos = op.clone().add(new THREE.Vector3(4.5, 4.5, 10));
+            targetLook = op.clone();
+            setFocusHash('orion');
+        }
+
+        function applyFocusHash() {
+            switch (getHashFocusValue()) {
+                case 'orion':
+                    if (cameraMode !== 'follow-orion') focusOrion();
+                    break;
+                case 'earth':
+                    focusEarth();
+                    break;
+                case 'moon':
+                    focusMoon();
+                    break;
+                case 'earthmoon':
+                    focusEarthMoon();
+                    break;
+                case 'solarsystem':
+                    focusSolarSystem();
+                    break;
+                case 'mars2033':
+                    focusMars2033();
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        function roundCameraValue(value) {
+            return Number(value.toFixed(3));
+        }
+
+        function pulseObserverControl(elementId) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+            el.classList.add('sim-active');
+            if (observerAngleResetTimeout !== null) {
+                clearTimeout(observerAngleResetTimeout);
+            }
+            observerAngleResetTimeout = window.setTimeout(() => {
+                el.classList.remove('sim-active');
+                observerAngleResetTimeout = null;
+            }, 1200);
+        }
+
+        function setObserverPanelVisible(visible) {
+            const panel = document.getElementById('observerSpecs');
+            const btn = document.getElementById('btn-observer-angle');
+            panel.classList.toggle('open', visible);
+            panel.setAttribute('aria-hidden', visible ? 'false' : 'true');
+            btn.classList.toggle('active', visible);
+            if (!visible) setObserverEditorVisible(false);
+        }
+
+        function setObserverEditorVisible(visible) {
+            const advanced = document.getElementById('observer-specs-advanced');
+            advanced.classList.toggle('open', visible);
+            advanced.setAttribute('aria-hidden', visible ? 'false' : 'true');
+            document.getElementById('observer-specs-toggle-wrap').classList.toggle('hidden', visible);
+        }
+
+        async function writeClipboardText(text) {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(text);
+                return;
+            }
+
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.setAttribute('readonly', '');
+            textArea.style.position = 'fixed';
+            textArea.style.opacity = '0';
+            textArea.style.pointerEvents = 'none';
+            document.body.appendChild(textArea);
+            textArea.select();
+
+            const copied = document.execCommand('copy');
+            document.body.removeChild(textArea);
+
+            if (!copied) {
+                throw new Error('Clipboard copy failed');
+            }
+        }
+
+        function getObserverPayloadFromCamera(position = camera.position.clone(), target = controls.target.clone(), extra = {}) {
+            const offset = position.clone().sub(target);
+            const spherical = new THREE.Spherical().setFromVector3(offset);
+            return {
+                view: activeView,
+                cameraMode,
+                vantagePoint: currentObserverVantagePoint,
+                distance: roundCameraValue(spherical.radius),
+                azimuthDeg: roundCameraValue(THREE.MathUtils.radToDeg(spherical.theta)),
+                polarDeg: roundCameraValue(THREE.MathUtils.radToDeg(spherical.phi)),
+                position: {
+                    x: roundCameraValue(position.x),
+                    y: roundCameraValue(position.y),
+                    z: roundCameraValue(position.z)
+                },
+                target: {
+                    x: roundCameraValue(target.x),
+                    y: roundCameraValue(target.y),
+                    z: roundCameraValue(target.z)
+                },
+                ...extra
+            };
+        }
+
+        function setObserverJsonText(payload) {
+            document.getElementById('observer-json').value = JSON.stringify(payload, null, 2);
+        }
+
+        function getCurrentViewAnchorTarget() {
+            if (cameraMode === 'follow-orion') return orionGroup.position.clone();
+            if (cameraMode === 'earth-moon') {
+                const mid = moonGroup.position.clone().multiplyScalar(0.45);
+                mid.y = 0;
+                return mid;
+            }
+            if (cameraMode === 'mars-2033') {
+                return controls.target.clone();
+            }
+            if (cameraMode === 'solar-system') return SOLAR_CENTER.clone();
+            return controls.target.clone();
+        }
+
+        function getSolarBodyWorldPos(name, dateMs = getCurrentSolarDateMs()) {
+            if (name === 'Sun') return SOLAR_CENTER.clone();
+            if (!solarPlanets[name]) return null;
+            return getPlanetWorldPos(solarPlanets[name].data, dateMs);
+        }
+
+        function getEarthWorldPosForView() {
+            if (activeView === 'earth-moon' || cameraMode === 'follow-orion') {
+                return new THREE.Vector3(0, 0, 0);
+            }
+            return getSolarBodyWorldPos('Earth');
+        }
+
+        function getMoonWorldPosForView() {
+            return moonGroup.position.clone();
+        }
+
+        function getAstroidBeltWorldPos(target = getCurrentViewAnchorTarget(), dateMs = getCurrentSolarDateMs()) {
+            const mars = getPlanetWorldPos(solarPlanets.Mars.data, dateMs);
+            const jupiter = getPlanetWorldPos(solarPlanets.Jupiter.data, dateMs);
+            const beltRadius = mars.distanceTo(SOLAR_CENTER) * 0.45 + jupiter.distanceTo(SOLAR_CENTER) * 0.55;
+            const radial = target.clone().sub(SOLAR_CENTER);
+            if (radial.lengthSq() < 1e-6) radial.set(1, 0, 0);
+            radial.normalize();
+            return SOLAR_CENTER.clone().add(radial.multiplyScalar(beltRadius)).add(new THREE.Vector3(0, 1200, 0));
+        }
+
+        function getObserverVantageAnchor(vantagePoint) {
+            switch (vantagePoint) {
+                case 'From Sun': return getSolarBodyWorldPos('Sun');
+                case 'From Mercury': return getSolarBodyWorldPos('Mercury');
+                case 'From Venus': return getSolarBodyWorldPos('Venus');
+                case 'From Earth': return getEarthWorldPosForView();
+                case 'From Moon': return getMoonWorldPosForView();
+                case 'From Mars': return getSolarBodyWorldPos('Mars');
+                case 'From Astroid Belt': return getAstroidBeltWorldPos();
+                case 'From Jupiter': return getSolarBodyWorldPos('Jupiter');
+                case 'From Saturn': return getSolarBodyWorldPos('Saturn');
+                case 'From Uranus': return getSolarBodyWorldPos('Uranus');
+                case 'From Neptune': return getSolarBodyWorldPos('Neptune');
+                default: return null;
+            }
+        }
+
+        function getObserverFallbackTarget(vantagePoint) {
+            switch (vantagePoint) {
+                case 'From Sun':
+                    return getSolarBodyWorldPos('Earth');
+                case 'From Earth':
+                    return activeView === 'earth-moon' ? moonGroup.position.clone() : getSolarBodyWorldPos('Sun');
+                case 'From Moon':
+                    return new THREE.Vector3(0, 0, 0);
+                case 'From Mars':
+                    return getSolarBodyWorldPos('Earth');
+                case 'From Astroid Belt':
+                    return SOLAR_CENTER.clone();
+                default:
+                    return SOLAR_CENTER.clone();
+            }
+        }
+
+        function getObserverVantageStandOff(vantagePoint) {
+            switch (vantagePoint) {
+                case 'From Sun': return 2600;
+                case 'From Moon': return 9;
+                case 'From Astroid Belt': return 2800;
+                case 'From Jupiter':
+                case 'From Saturn':
+                case 'From Uranus':
+                case 'From Neptune':
+                    return 32;
+                default: return 16;
+            }
+        }
+
+        function buildObserverVantagePayload(vantagePoint) {
+            if (vantagePoint === 'From Space') {
+                currentObserverVantagePoint = vantagePoint;
+                return getObserverPayloadFromCamera(camera.position.clone(), controls.target.clone(), {
+                    vantagePoint
+                });
+            }
+
+            const anchor = getObserverVantageAnchor(vantagePoint);
+            if (!anchor) {
+                currentObserverVantagePoint = 'From Space';
+                return getObserverPayloadFromCamera();
+            }
+
+            let lookTarget = getCurrentViewAnchorTarget();
+            if (lookTarget.distanceToSquared(anchor) < 1) {
+                lookTarget = getObserverFallbackTarget(vantagePoint);
+            }
+
+            const direction = lookTarget.clone().sub(anchor);
+            if (direction.lengthSq() < 1e-6) direction.set(1, 0.12, 1);
+            const position = anchor.clone().add(direction.normalize().multiplyScalar(getObserverVantageStandOff(vantagePoint)));
+            currentObserverVantagePoint = vantagePoint;
+            return getObserverPayloadFromCamera(position, lookTarget, {
+                vantagePoint,
+                view: activeView,
+                cameraMode
+            });
+        }
+
+        function parseObserverPayload() {
+            const payload = JSON.parse(document.getElementById('observer-json').value);
+            if (!payload || typeof payload !== 'object') {
+                throw new Error('Observer JSON must be an object.');
+            }
+            if (!payload.target || typeof payload.target !== 'object') {
+                throw new Error('Observer JSON requires a target object.');
+            }
+
+            const target = new THREE.Vector3(
+                Number(payload.target.x),
+                Number(payload.target.y),
+                Number(payload.target.z)
+            );
+            if (!Number.isFinite(target.x) || !Number.isFinite(target.y) || !Number.isFinite(target.z)) {
+                throw new Error('Target coordinates must be numeric.');
+            }
+
+            let position;
+            if (
+                Number.isFinite(Number(payload.distance)) &&
+                Number.isFinite(Number(payload.azimuthDeg)) &&
+                Number.isFinite(Number(payload.polarDeg))
+            ) {
+                position = target.clone().add(
+                    new THREE.Vector3().setFromSpherical(
+                        new THREE.Spherical(
+                            Number(payload.distance),
+                            THREE.MathUtils.degToRad(Number(payload.polarDeg)),
+                            THREE.MathUtils.degToRad(Number(payload.azimuthDeg))
+                        )
+                    )
+                );
+            } else if (payload.position && typeof payload.position === 'object') {
+                position = new THREE.Vector3(
+                    Number(payload.position.x),
+                    Number(payload.position.y),
+                    Number(payload.position.z)
+                );
+            }
+
+            if (!position || !Number.isFinite(position.x) || !Number.isFinite(position.y) || !Number.isFinite(position.z)) {
+                throw new Error('Observer JSON needs numeric position or spherical values.');
+            }
+
+            return {
+                view: payload.view,
+                cameraMode: payload.cameraMode,
+                vantagePoint: payload.vantagePoint || document.getElementById('vantagePoint').value || 'From Space',
+                position,
+                target
+            };
+        }
+
+        function applyObserverCamera(position, target, viewOverride, cameraModeOverride, vantagePointOverride) {
+            targetPos = null;
+            targetLook = null;
+            controls.enabled = true;
+            zoomForwardAmount = 0;
+            if (viewOverride) activeView = viewOverride;
+            if (cameraModeOverride) cameraMode = cameraModeOverride;
+            if (vantagePointOverride) currentObserverVantagePoint = vantagePointOverride;
+            camera.position.copy(position);
+            controls.target.copy(target);
+            controls.update();
+            syncActiveButtons();
+        }
+
+        function getCurrentForwardDirection() {
+            const forward = controls.target.clone().sub(camera.position);
+            if (forward.lengthSq() < 1e-6) forward.set(0, 0, -1);
+            return forward.normalize();
+        }
+
+        function zoomCameraBy(scaleFactor) {
+            targetPos = null;
+            targetLook = null;
+            controls.enabled = true;
+            const offset = camera.position.clone().sub(controls.target);
+            if (offset.lengthSq() < 1e-6) offset.set(0, 0, 1);
+            const currentRadius = offset.length();
+            const zoomingIn = scaleFactor < 1;
+            const trackedView = cameraMode === 'follow-orion' || cameraMode === 'earth-moon' || cameraMode === 'mars-2033';
+            const nearZoomThreshold = trackedView ? 12 : 2;
+            if (zoomingIn && trackedView && currentRadius <= nearZoomThreshold) {
+                zoomForwardAmount += Math.max(1.5, currentRadius * 0.42);
+            } else if (!zoomingIn && zoomForwardAmount > 0) {
+                zoomForwardAmount = Math.max(0, zoomForwardAmount - Math.max(1.5, currentRadius * 0.5));
+            }
+            const nextRadius = Math.max(1.2, currentRadius * scaleFactor);
+            camera.position.copy(
+                controls.target.clone().add(offset.normalize().multiplyScalar(nextRadius))
+            );
+            controls.update();
+        }
 
         function clearActiveButtons() {
             document.getElementById('btn-follow').classList.remove('active');
             document.getElementById('btn-earth-moon').classList.remove('active');
-            document.getElementById('btn-earth-mars').classList.remove('active');
             document.getElementById('btn-solar-system').classList.remove('active');
+            document.getElementById('btn-mars-2033').classList.remove('active');
         }
 
         function setActiveViewButton(id) {
@@ -1251,104 +2161,211 @@
             document.getElementById(id).classList.add('active');
         }
 
+        function syncActiveButtons() {
+            if (cameraMode === 'follow-orion') {
+                setActiveViewButton('btn-follow');
+                return;
+            }
+
+            setActiveViewButton(
+                activeView === 'mars-2033' ? 'btn-mars-2033' :
+                activeView === 'solar-system' ? 'btn-solar-system' :
+                'btn-earth-moon'
+            );
+        }
+
         function getCurrentSceneDay(now = Date.now()) {
             if (scrubDay !== null) return scrubDay;
             if (paused && pausedDay !== null) return pausedDay;
             if (simStartReal !== null && simStartDay !== null) {
-                return Math.max(0, simStartDay + (now - simStartReal) * speedMult / 86400000);
+                return Math.max(0, simStartDay + (now - simStartReal) * speedMult / MS_PER_DAY);
             }
-            return Math.max(0, (now - LAUNCH_TIME) / 86400000);
+            return Math.max(0, (now - LAUNCH_TIME) / MS_PER_DAY);
+        }
+
+        function getCurrentSolarDateMs(now = Date.now()) {
+            if (scrubSolarDateMs !== null) return scrubSolarDateMs;
+            if (paused && pausedSolarDateMs !== null) return pausedSolarDateMs;
+            if (simStartReal !== null && solarSimStartDateMs !== null) {
+                return solarSimStartDateMs + (now - simStartReal) * speedMult;
+            }
+            return solarBaseDateMs;
+        }
+
+        function isMars2033TimelineView() {
+            return activeView === 'mars-2033';
+        }
+
+        function clampMars2033DateMs(dateMs) {
+            return Math.min(MARS_2033_RETURN_EARTH_MS, Math.max(MARS_2033_DEPART_EARTH_MS, dateMs));
         }
 
         function updatePlaybackButton() {
             const btn = document.getElementById('btn-play-pause');
-            const isPausedState = paused || scrubDay !== null;
-            btn.innerHTML = isPausedState ? '&#9654; Play' : '&#10074;&#10074; Pause';
+            const icon = btn.querySelector('.timeline-playback-icon');
+            const isPausedState = paused || scrubDay !== null || scrubSolarDateMs !== null;
+            icon.innerHTML = isPausedState ? '&#9654;' : '&#10074;&#10074;';
             btn.setAttribute('aria-label', isPausedState ? 'Play playback' : 'Pause playback');
             btn.classList.toggle('sim-active', isPausedState);
+            btn.classList.toggle('is-playing', !isPausedState);
         }
+
+        window.onPlanetDateChange = (value) => {
+            const nextDateMs = dateInputValueToMs(value);
+            solarBaseDateMs = nextDateMs;
+            scrubSolarDateMs = null;
+
+            if (simStartReal !== null) {
+                solarSimStartDateMs = nextDateMs;
+            } else if (paused) {
+                pausedSolarDateMs = nextDateMs;
+            } else {
+                solarSimStartDateMs = null;
+                pausedSolarDateMs = null;
+            }
+        };
 
         // Follow Orion: orbit controls stay enabled, target tracks Orion
         window.toggleFollow = () => {
             if (cameraMode === 'follow-orion') {
                 cameraMode = 'free';
-                setActiveViewButton(
-                    activeView === 'earth-mars' ? 'btn-earth-mars' :
-                    activeView === 'solar-system' ? 'btn-solar-system' :
-                    'btn-earth-moon'
+                syncActiveButtons();
+                setFocusHash(
+                    activeView === 'mars-2033' ? 'mars2033' :
+                    activeView === 'solar-system' ? 'solarsystem' :
+                    'earthmoon'
                 );
                 return;
             }
-            cameraMode = 'follow-orion';
-            clearActiveButtons();
-            document.getElementById('btn-follow').classList.add('active');
-            controls.enabled = true;
-            const op = orionGroup.position.clone();
-            targetPos = op.clone().add(new THREE.Vector3(1, 1.5, 2));
-            targetLook = op.clone();
+            focusOrion();
         };
 
         window.focusEarth = () => {
             cameraMode = 'free';
-            setActiveViewButton(
-                activeView === 'earth-mars' ? 'btn-earth-mars' :
-                activeView === 'solar-system' ? 'btn-solar-system' :
-                'btn-earth-moon'
-            );
+            syncActiveButtons();
             controls.enabled = true;
+            zoomForwardAmount = 0;
             targetPos = new THREE.Vector3(0, eR * 6, eR * 8);
             targetLook = new THREE.Vector3(0, 0, 0);
+            setFocusHash('earth');
         };
 
         window.focusMoon = () => {
             cameraMode = 'free';
-            setActiveViewButton(
-                activeView === 'earth-mars' ? 'btn-earth-mars' :
-                activeView === 'solar-system' ? 'btn-solar-system' :
-                'btn-earth-moon'
-            );
+            syncActiveButtons();
             controls.enabled = true;
+            zoomForwardAmount = 0;
             const mp = moonGroup.position;
             targetPos = new THREE.Vector3(mp.x + mR * 4, mp.y + mR * 6, mp.z + mR * 10);
             targetLook = mp.clone();
+            setFocusHash('moon');
         };
 
         window.focusEarthMoon = () => {
             cameraMode = 'earth-moon';
             activeView = 'earth-moon';
-            setActiveViewButton('btn-earth-moon');
+            syncActiveButtons();
             controls.enabled = true;
+            zoomForwardAmount = 0;
             const mid = moonGroup.position.clone().multiplyScalar(0.45);
             mid.y = 0;
             targetPos = new THREE.Vector3(mid.x, 100, mid.z + 60);
             targetLook = mid.clone();
-        };
-
-        window.focusEarthMars = () => {
-            cameraMode = 'earth-mars';
-            activeView = 'earth-mars';
-            setActiveViewButton('btn-earth-mars');
-            controls.enabled = true;
-            const earthPos = solarPlanets.Earth.group.position.clone().add(SOLAR_CENTER);
-            const marsPos = solarPlanets.Mars.group.position.clone().add(SOLAR_CENTER);
-            const mid = earthPos.clone().lerp(marsPos, 0.5);
-            const dist = earthPos.distanceTo(marsPos);
-            targetPos = mid.clone().add(new THREE.Vector3(0, Math.max(340, dist * 1.05), Math.max(680, dist * 1.45)));
-            targetLook = mid;
+            setFocusHash('earthmoon');
         };
 
         window.focusSolarSystem = () => {
             cameraMode = 'solar-system';
             activeView = 'solar-system';
-            setActiveViewButton('btn-solar-system');
+            syncActiveButtons();
             controls.enabled = true;
-            targetPos = SOLAR_CENTER.clone().add(new THREE.Vector3(0, 2600, 6150));
+            zoomForwardAmount = 0;
+            targetPos = SOLAR_CENTER.clone().add(new THREE.Vector3(0, 165000, 435000));
             targetLook = SOLAR_CENTER.clone();
+            setFocusHash('solarsystem');
+        };
+
+        window.focusMars2033 = () => {
+            cameraMode = 'mars-2033';
+            activeView = 'mars-2033';
+            syncActiveButtons();
+            controls.enabled = true;
+            zoomForwardAmount = 0;
+            targetPos = MARS_2033_INITIAL_CAMERA_POS.clone();
+            targetLook = MARS_2033_INITIAL_CAMERA_TARGET.clone();
+            solarBaseDateMs = MARS_2033_DEPART_EARTH_MS;
+            scrubSolarDateMs = null;
+            scrubbing = false;
+            if (simStartReal !== null) solarSimStartDateMs = MARS_2033_DEPART_EARTH_MS;
+            if (paused) pausedSolarDateMs = MARS_2033_DEPART_EARTH_MS;
+            setFocusHash('mars2033');
         };
 
         window.focusOverview = window.focusEarthMoon;
 
-        // Simulate travel
+        window.addEventListener('hashchange', applyFocusHash);
+
+        window.zoomIn = () => zoomCameraBy(0.82);
+        window.zoomOut = () => zoomCameraBy(1.22);
+
+        window.openObserverSpecs = () => {
+            const payload = getObserverPayloadFromCamera(camera.position.clone(), controls.target.clone(), {
+                vantagePoint: currentObserverVantagePoint
+            });
+            document.getElementById('vantagePoint').value = payload.vantagePoint || 'From Space';
+            setObserverJsonText(payload);
+            setObserverEditorVisible(false);
+            setObserverPanelVisible(true);
+        };
+
+        window.closeObserverSpecs = () => {
+            setObserverPanelVisible(false);
+        };
+
+        window.toggleObserverSpecsEditor = () => {
+            const advanced = document.getElementById('observer-specs-advanced');
+            setObserverEditorVisible(!advanced.classList.contains('open'));
+        };
+
+        window.copyObserverJson = async () => {
+            try {
+                await writeClipboardText(document.getElementById('observer-json').value);
+                pulseObserverControl('btn-observer-angle');
+                pulseObserverControl('btn-copy-observer-json');
+            } catch (error) {
+                console.error(error);
+            }
+        };
+
+        window.applyObserverSpecs = () => {
+            try {
+                const payload = parseObserverPayload();
+                document.getElementById('vantagePoint').value = payload.vantagePoint;
+                applyObserverCamera(payload.position, payload.target, payload.view, payload.cameraMode, payload.vantagePoint);
+                setObserverJsonText(getObserverPayloadFromCamera(payload.position, payload.target, {
+                    view: payload.view || activeView,
+                    cameraMode: payload.cameraMode || cameraMode,
+                    vantagePoint: payload.vantagePoint
+                }));
+            } catch (error) {
+                console.error(error);
+                alert(error.message);
+            }
+        };
+
+        window.onVantagePointChange = (value) => {
+            const payload = buildObserverVantagePayload(value);
+            setObserverJsonText(payload);
+            applyObserverCamera(
+                new THREE.Vector3(payload.position.x, payload.position.y, payload.position.z),
+                new THREE.Vector3(payload.target.x, payload.target.y, payload.target.z),
+                payload.view,
+                payload.cameraMode,
+                payload.vantagePoint
+            );
+        };
+
+        // Accelerate time
         window.toggleSimMenu = () => {
             document.getElementById('sim-dropdown').classList.toggle('open');
         };
@@ -1367,13 +2384,16 @@
             simStartReal = Date.now();
             // Start simulation from scrub position if user was scrubbing, else from real time
             simStartDay = getCurrentSceneDay(simStartReal);
+            solarSimStartDateMs = getCurrentSolarDateMs(simStartReal);
             scrubDay = null;
+            scrubSolarDateMs = null;
             paused = false;
             pausedDay = null;
+            pausedSolarDateMs = null;
             speedMult = spd;
             document.getElementById('sim-dropdown').classList.remove('open');
             document.getElementById('btn-sim').classList.add('sim-active');
-            document.getElementById('btn-sim').textContent = `Simulating ${spd.toLocaleString()}x`;
+            document.getElementById('btn-sim').textContent = `Accelerating ${spd.toLocaleString()}x`;
             document.getElementById('btn-reset').style.display = 'block';
             // Show slider and sync it
             document.getElementById('sim-slider-wrap').classList.add('visible');
@@ -1387,12 +2407,15 @@
             // Keep simStartReal but recalculate simStartDay from current simDay
             const now = Date.now();
             simStartDay = getCurrentSceneDay(now);
+            solarSimStartDateMs = getCurrentSolarDateMs(now);
             simStartReal = now;
             scrubDay = null;
+            scrubSolarDateMs = null;
             paused = false;
             pausedDay = null;
+            pausedSolarDateMs = null;
             speedMult = spd;
-            document.getElementById('btn-sim').textContent = `Simulating ${spd.toLocaleString()}x`;
+            document.getElementById('btn-sim').textContent = `Accelerating ${spd.toLocaleString()}x`;
             document.getElementById('sim-slider-label').textContent = spd.toLocaleString() + 'x';
             document.getElementById('btn-reset').style.display = 'block';
             document.getElementById('sim-slider-wrap').classList.add('visible');
@@ -1401,19 +2424,24 @@
 
         window.togglePlayback = () => {
             const now = Date.now();
-            if (paused || scrubDay !== null) {
+            if (paused || scrubDay !== null || scrubSolarDateMs !== null) {
                 const resumeDay = scrubDay !== null ? scrubDay : pausedDay;
                 simStartDay = Math.max(0, resumeDay ?? getCurrentSceneDay(now));
+                solarSimStartDateMs = scrubSolarDateMs ?? pausedSolarDateMs ?? getCurrentSolarDateMs(now);
                 simStartReal = now;
                 scrubDay = null;
+                scrubSolarDateMs = null;
                 paused = false;
                 pausedDay = null;
+                pausedSolarDateMs = null;
                 document.getElementById('btn-reset').style.display = 'block';
             } else {
                 pausedDay = getCurrentSceneDay(now);
+                pausedSolarDateMs = getCurrentSolarDateMs(now);
                 paused = true;
                 simStartReal = null;
                 simStartDay = null;
+                solarSimStartDateMs = null;
                 document.getElementById('btn-reset').style.display = 'block';
             }
             updatePlaybackButton();
@@ -1423,11 +2451,14 @@
             speedMult = 1;
             simStartReal = null;
             simStartDay = null;
+            solarSimStartDateMs = null;
             paused = false;
             pausedDay = null;
+            pausedSolarDateMs = null;
             scrubDay = null;
+            scrubSolarDateMs = null;
             document.getElementById('btn-sim').classList.remove('sim-active');
-            document.getElementById('btn-sim').textContent = 'Simulate Travel';
+            document.getElementById('btn-sim').textContent = 'Accelerate';
             document.getElementById('btn-reset').style.display = 'none';
             document.getElementById('sim-slider-wrap').classList.remove('visible');
             updatePlaybackButton();
@@ -1438,17 +2469,28 @@
         let scrubbing = false;
 
         window.onTimelineScrub = (val) => {
-            // Slider 0-10000 maps to TLI_DAY → MISSION_DAYS
-            scrubDay = TLI_DAY + (val / 10000) * (MISSION_DAYS - TLI_DAY);
+            if (isMars2033TimelineView()) {
+                const progress = val / 10000;
+                scrubSolarDateMs = clampMars2033DateMs(
+                    MARS_2033_DEPART_EARTH_MS + progress * MARS_2033_MISSION_DURATION_MS
+                );
+                scrubDay = null;
+            } else {
+                // Slider 0-10000 maps to TLI_DAY → MISSION_DAYS
+                scrubDay = TLI_DAY + (val / 10000) * (MISSION_DAYS - TLI_DAY);
+                scrubSolarDateMs = null;
+            }
             scrubbing = true;
             paused = false;
             pausedDay = null;
+            pausedSolarDateMs = null;
             simStartReal = null;
             simStartDay = null;
+            solarSimStartDateMs = null;
             if (speedMult > 1) {
                 speedMult = 1;
                 document.getElementById('btn-sim').classList.remove('sim-active');
-                document.getElementById('btn-sim').textContent = 'Simulate Travel';
+                document.getElementById('btn-sim').textContent = 'Accelerate';
                 document.getElementById('btn-reset').style.display = 'none';
                 document.getElementById('sim-slider-wrap').classList.remove('visible');
             }
@@ -1458,9 +2500,21 @@
         // Detect when user finishes scrubbing
         document.addEventListener('DOMContentLoaded', () => {
             const slider = document.getElementById('timeline-slider');
+            const progressTrack = document.getElementById('progress-track');
             if (slider) {
                 slider.addEventListener('pointerup', () => { scrubbing = false; });
                 slider.addEventListener('touchend', () => { scrubbing = false; });
+            }
+            if (progressTrack && slider) {
+                progressTrack.addEventListener('click', (event) => {
+                    if (event.target === slider) return;
+                    const rect = progressTrack.getBoundingClientRect();
+                    const ratio = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+                    const value = Math.round(ratio * 10000);
+                    slider.value = String(value);
+                    window.onTimelineScrub(value);
+                    scrubbing = false;
+                });
             }
         });
 
@@ -1469,6 +2523,8 @@
             renderer.domElement.addEventListener(evt, () => {
                 targetPos = null;
                 targetLook = null;
+                currentObserverVantagePoint = 'From Space';
+                zoomForwardAmount = 0;
             }, { passive: true });
         });
 
@@ -1494,9 +2550,11 @@
 
             // Mission time (real for HUD)
             const realElapsed = now - LAUNCH_TIME;
-            const realElapsedDays = Math.max(0, realElapsed / 86400000);
+            const realElapsedDays = Math.max(0, realElapsed / MS_PER_DAY);
             const realT = Math.max(0, Math.min(realElapsed / MISSION_DURATION_MS, 1.0));
             const realDay = realT * MISSION_DAYS;
+            const solarDateMs = getCurrentSolarDateMs(now);
+            const solarDate = new Date(solarDateMs);
 
             // Simulated time for 3D scene
             let simDayRaw;
@@ -1507,14 +2565,13 @@
                 simDayRaw = pausedDay;
             } else if (simStartReal !== null && simStartDay !== null) {
                 const dtMs = now - simStartReal;
-                simDayRaw = simStartDay + (dtMs * speedMult) / 86400000;
+                simDayRaw = simStartDay + (dtMs * speedMult) / MS_PER_DAY;
             } else {
                 simDayRaw = realElapsedDays;
             }
             const simDay = Math.max(0, Math.min(simDayRaw, MISSION_DAYS));
-            const solarDay = Math.max(0, simDayRaw);
             const simT = simDay / MISSION_DAYS;
-            const starScale = activeView === 'solar-system' ? 4 : 1;
+            const starScale = activeView === 'solar-system' ? SOLAR_STAR_SCALE : 1;
             starBackgroundGroup.scale.lerp(
                 new THREE.Vector3(starScale, starScale, starScale),
                 0.08
@@ -1523,31 +2580,95 @@
             // ── Update Solar System ──
             for (const name in solarPlanets) {
                 const planet = solarPlanets[name];
-                planet.group.position.copy(getPlanetLocalPos(planet.data, solarDay));
-                const solarOrbitMode = activeView === 'solar-system';
-                planet.orbitBand.material.opacity = solarOrbitMode
-                    ? (name === 'Earth' ? 0.32 : 0.24)
+                if (Math.abs(solarDateMs - planet.lastOrbitRefreshMs) >= 30 * MS_PER_DAY) {
+                    refreshSolarOrbitGeometry(planet, solarDateMs);
+                }
+                planet.group.position.copy(getPlanetLocalPos(planet.data, solarDateMs));
+                const heliocentricOrbitMode = activeView === 'solar-system' || activeView === 'mars-2033';
+                const basePlanetVisualBoost = activeView === 'solar-system'
+                    ? (name === 'Earth' || name === 'Mars' ? 40 : 28)
+                    : activeView === 'mars-2033'
+                    ? (name === 'Earth' || name === 'Mars' ? 9 : 6)
+                    : 1;
+                const zoomResponsiveBoost = heliocentricOrbitMode
+                    ? Math.min(
+                        activeView === 'solar-system' ? 5.5 : 4.5,
+                        Math.max(
+                            1,
+                            camera.position.distanceTo(controls.target) / (activeView === 'solar-system' ? 180000 : 50000)
+                        )
+                    )
+                    : 1;
+                const planetVisualBoost = basePlanetVisualBoost * zoomResponsiveBoost;
+                planet.visual.scale.setScalar(planetVisualBoost);
+                planet.label.position.y = planet.baseLabelY + (planetVisualBoost - 1) * planet.bodyRadius * 1.35;
+                planet.body.material.opacity = heliocentricOrbitMode ? 1 : 0.96;
+                planet.marker.visible = activeView === 'solar-system' || activeView === 'mars-2033';
+                planet.marker.material.opacity = activeView === 'solar-system' ? 0.96 : activeView === 'mars-2033' ? 0.92 : 0.8;
+                planet.glow.material.opacity = activeView === 'mars-2033' ? 0.34 : activeView === 'solar-system' ? 0.48 : 0.18;
+                if (planet.sprite) {
+                    planet.sprite.material.opacity = activeView === 'mars-2033' ? 0.7 : activeView === 'solar-system' ? 0.92 : 0.42;
+                }
+                planet.orbitTube.material.opacity = heliocentricOrbitMode
+                    ? (name === 'Earth' ? 0.26 : 0.18)
                     : 0;
-                planet.orbitLine.material.opacity = solarOrbitMode
-                    ? Math.min(0.95, planet.orbitBaseOpacity + 0.42)
+                planet.orbitLine.material.opacity = heliocentricOrbitMode
+                    ? Math.min(0.95, planet.orbitBaseOpacity + 0.36)
                     : planet.orbitBaseOpacity;
             }
 
-            const earthSolarPos = solarPlanets.Earth.group.position.clone();
-            const marsSolarPos = solarPlanets.Mars.group.position.clone();
-            const returnEarthPos = getPlanetLocalPos(solarPlanets.Earth.data, solarDay + MARS_TRANSFER_DAYS + MARS_RETURN_DAYS);
-            const transferHeight = Math.max(18, earthSolarPos.distanceTo(marsSolarPos) * 0.16);
-            const transferOut = buildTransferSegment(earthSolarPos, marsSolarPos, transferHeight, 18);
-            const transferBack = buildTransferSegment(marsSolarPos, returnEarthPos, -transferHeight * 0.9, 12).slice(1);
-            const transferPts = transferOut.concat(transferBack);
-            marsTransferLine.geometry.dispose();
-            marsTransferLine.geometry = new THREE.BufferGeometry().setFromPoints(transferPts);
-            marsTransferLine.computeLineDistances();
-            marsTransferGlow.geometry.dispose();
-            marsTransferGlow.geometry = new THREE.BufferGeometry().setFromPoints(transferPts);
-            const showMarsTransfer = activeView === 'earth-mars' || activeView === 'solar-system';
-            marsTransferLine.visible = showMarsTransfer;
-            marsTransferGlow.visible = showMarsTransfer;
+            const mars2033EarthDepart = getPlanetLocalPos(solarPlanets.Earth.data, MARS_2033_DEPART_EARTH_MS);
+            const mars2033MarsArrive = getPlanetLocalPos(solarPlanets.Mars.data, MARS_2033_ARRIVE_MARS_MS);
+            const mars2033MarsDepart = getPlanetLocalPos(solarPlanets.Mars.data, MARS_2033_DEPART_MARS_MS);
+            const mars2033EarthReturn = getPlanetLocalPos(solarPlanets.Earth.data, MARS_2033_RETURN_EARTH_MS);
+            const mars2033OutHeight = Math.max(2000, mars2033EarthDepart.distanceTo(mars2033MarsArrive) * 0.12);
+            const mars2033BackHeight = Math.max(2000, mars2033MarsDepart.distanceTo(mars2033EarthReturn) * 0.12);
+            const mars2033Outbound = buildTransferSegment(mars2033EarthDepart, mars2033MarsArrive, mars2033OutHeight, 1200);
+            const mars2033Stay = buildHoldArc(mars2033MarsArrive, mars2033Outbound[mars2033Outbound.length - 1], mars2033MarsDepart, mars2033OutHeight * 0.06).slice(1);
+            const mars2033Return = buildTransferSegment(mars2033MarsDepart, mars2033EarthReturn, -mars2033BackHeight, 950).slice(1);
+            const mars2033Pts = mars2033Outbound.concat(mars2033Stay, mars2033Return);
+            mars2033TransferLine.geometry.dispose();
+            mars2033TransferLine.geometry = new THREE.BufferGeometry().setFromPoints(mars2033Pts);
+            mars2033TransferLine.computeLineDistances();
+            const mars2033OutboundCount = Math.max(1, mars2033Outbound.length - 1);
+            const mars2033StayCount = Math.max(1, mars2033Stay.length - 1);
+            const mars2033ReturnCount = Math.max(1, mars2033Return.length - 1);
+            const mars2033PointCount = Math.max(1, mars2033Pts.length - 1);
+            let mars2033ProgressT = 0;
+            if (solarDateMs < MARS_2033_ARRIVE_MARS_MS) {
+                mars2033ProgressT = ((solarDateMs - MARS_2033_DEPART_EARTH_MS) / (MARS_2033_ARRIVE_MARS_MS - MARS_2033_DEPART_EARTH_MS)) * (mars2033OutboundCount / mars2033PointCount);
+            } else if (solarDateMs < MARS_2033_DEPART_MARS_MS) {
+                mars2033ProgressT =
+                    (mars2033OutboundCount + ((solarDateMs - MARS_2033_ARRIVE_MARS_MS) / (MARS_2033_DEPART_MARS_MS - MARS_2033_ARRIVE_MARS_MS)) * mars2033StayCount) /
+                    mars2033PointCount;
+            } else if (solarDateMs < MARS_2033_RETURN_EARTH_MS) {
+                mars2033ProgressT =
+                    (mars2033OutboundCount + mars2033StayCount + ((solarDateMs - MARS_2033_DEPART_MARS_MS) / (MARS_2033_RETURN_EARTH_MS - MARS_2033_DEPART_MARS_MS)) * mars2033ReturnCount) /
+                    mars2033PointCount;
+            } else {
+                mars2033ProgressT = 1;
+            }
+            const mars2033TraveledIdx = Math.min(
+                mars2033Pts.length,
+                Math.max(2, Math.ceil(Math.max(0, Math.min(1, mars2033ProgressT)) * mars2033PointCount) + 1)
+            );
+            mars2033TraveledLine.geometry.dispose();
+            mars2033TraveledLine.geometry = new THREE.BufferGeometry().setFromPoints(mars2033Pts.slice(0, mars2033TraveledIdx));
+            mars2033TransferGlow.geometry.dispose();
+            mars2033TransferGlow.geometry = new THREE.BufferGeometry().setFromPoints(mars2033Pts);
+            const showMars2033Transfer = activeView === 'mars-2033';
+            mars2033TransferLine.visible = showMars2033Transfer;
+            mars2033TraveledLine.visible = showMars2033Transfer;
+            mars2033TransferGlow.visible = showMars2033Transfer;
+            const mars2033CraftLocal = getMars2033VehicleLocalPos(
+                solarDateMs,
+                mars2033Outbound,
+                mars2033Stay,
+                mars2033Return
+            );
+            mars2033CraftGroup.position.copy(mars2033CraftLocal);
+            mars2033CraftGroup.visible = showMars2033Transfer;
+            mars2033Orb.material.opacity = 0.92;
 
             // ── Update Moon ──
             const moonKm = getMoonPos(simDay);
@@ -1594,7 +2715,7 @@
             // ── Sun orbital motion (Earth orbits Sun in 365.25 days) ──
             const sunAngularVel = (2 * Math.PI) / (365.25 * 86400); // rad/s
             sunAngle += sunAngularVel * dt * (speedMult > 1 ? speedMult : 1);
-            const sunDist = EXISTING_EARTH_SOLAR_DISTANCE;
+            const sunDist = AU_KM * SCALE;
             sunDir.position.set(
                 Math.cos(sunAngle) * sunDist,
                 80,
@@ -1617,30 +2738,32 @@
                 if (cameraMode === 'follow-orion') {
                     // Move camera with Orion — keep relative offset stable
                     const offset = camera.position.clone().sub(controls.target);
-                    controls.target.copy(orionSc);
-                    camera.position.copy(orionSc).add(offset);
+                    const dolly = getCurrentForwardDirection().multiplyScalar(zoomForwardAmount);
+                    controls.target.copy(orionSc).add(dolly);
+                    camera.position.copy(orionSc).add(offset).add(dolly);
                 } else if (cameraMode === 'earth-moon') {
                     const mid = moonGroup.position.clone().multiplyScalar(0.45);
                     mid.y = 0;
                     const offset = camera.position.clone().sub(controls.target);
-                    controls.target.copy(mid);
-                    camera.position.copy(mid).add(offset);
-                } else if (cameraMode === 'earth-mars') {
-                    const earthWorld = earthSolarPos.clone().add(SOLAR_CENTER);
-                    const marsWorld = marsSolarPos.clone().add(SOLAR_CENTER);
-                    const mid = earthWorld.clone().lerp(marsWorld, 0.5);
-                    const offset = camera.position.clone().sub(controls.target);
-                    controls.target.copy(mid);
-                    camera.position.copy(mid).add(offset);
+                    const dolly = getCurrentForwardDirection().multiplyScalar(zoomForwardAmount);
+                    controls.target.copy(mid).add(dolly);
+                    camera.position.copy(mid).add(offset).add(dolly);
                 }
             }
 
             controls.update();
+            if (activeView === 'solar-system') {
+                starBackgroundGroup.position.lerp(SOLAR_CENTER, 0.12);
+            } else {
+                starBackgroundGroup.position.copy(camera.position);
+            }
+            syncActiveButtons();
 
             // Labels face camera
             earthLabel.lookAt(camera.position);
             moonLabel.lookAt(camera.position);
             orionLabel.lookAt(camera.position);
+            mars2033CraftLabel.lookAt(camera.position);
             for (const name in solarPlanets) {
                 solarPlanets[name].label.lookAt(camera.position);
             }
@@ -1648,49 +2771,100 @@
             // ═══ HUD UPDATE — uses simDay during simulation/scrub ═══
             const hudDay = (scrubDay !== null || speedMult > 1) ? simDay : realDay;
             const hudT = hudDay / MISSION_DAYS;
-            const hudElapsedMs = hudDay * 86400000;
+            const hudElapsedMs = hudDay * MS_PER_DAY;
+            const mars2033TimelineMs = clampMars2033DateMs(solarDateMs);
+            const mars2033Progress = (mars2033TimelineMs - MARS_2033_DEPART_EARTH_MS) / MARS_2033_MISSION_DURATION_MS;
+            const mars2033MissionDay = Math.max(0, (mars2033TimelineMs - MARS_2033_DEPART_EARTH_MS) / MS_PER_DAY);
+            const mars2033ArrivalProgress = (MARS_2033_ARRIVE_MARS_MS - MARS_2033_DEPART_EARTH_MS) / MARS_2033_MISSION_DURATION_MS;
+            const mars2033DepartMarsProgress = (MARS_2033_DEPART_MARS_MS - MARS_2033_DEPART_EARTH_MS) / MARS_2033_MISSION_DURATION_MS;
 
             // Human-readable date/time in user's timezone
             const missionDate = new Date(LAUNCH_TIME + hudElapsedMs);
-            const dateStr = missionDate.toLocaleDateString(undefined, {
-                weekday: 'short', month: 'short', day: 'numeric'
-            });
-            const timeStr = missionDate.toLocaleTimeString(undefined, {
-                hour: '2-digit', minute: '2-digit', hour12: false
-            });
-            document.getElementById('met-display').textContent = `${dateStr}, ${timeStr}`;
+            const solarDateValue = msToDateInputValue(solarDateMs);
+            if (solarDateValue !== lastPlanetDateInputValue) {
+                document.getElementById('planet-date-input').value = solarDateValue;
+                lastPlanetDateInputValue = solarDateValue;
+            }
+
+            if (activeView === 'solar-system' || activeView === 'mars-2033') {
+                document.getElementById('timeline-title-text').textContent = 'Planet Date';
+                document.getElementById('met-display').textContent = solarDate.toLocaleDateString(undefined, {
+                    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC'
+                });
+            } else {
+                const dateStr = missionDate.toLocaleDateString(undefined, {
+                    weekday: 'short', month: 'short', day: 'numeric'
+                });
+                const timeStr = missionDate.toLocaleTimeString(undefined, {
+                    hour: '2-digit', minute: '2-digit', hour12: false
+                });
+                document.getElementById('timeline-title-text').textContent = 'Mission Time';
+                document.getElementById('met-display').textContent = `${dateStr}, ${timeStr}`;
+            }
+            document.getElementById('mission-name').textContent =
+                activeView === 'mars-2033' ? 'MARS 2033' : 'ARTEMIS II';
 
             // Update timeline slider (only when not being dragged)
             if (!scrubbing) {
-                const sliderVal = Math.max(0, (hudDay - TLI_DAY) / (MISSION_DAYS - TLI_DAY)) * 10000;
+                const sliderVal = isMars2033TimelineView()
+                    ? mars2033Progress * 10000
+                    : Math.max(0, (hudDay - TLI_DAY) / (MISSION_DAYS - TLI_DAY)) * 10000;
                 document.getElementById('timeline-slider').value = Math.round(Math.min(10000, sliderVal));
             }
             // Update slider gradient fill
-            const pct = Math.max(0, Math.min(100, (hudDay - TLI_DAY) / (MISSION_DAYS - TLI_DAY) * 100));
+            const pct = isMars2033TimelineView()
+                ? Math.max(0, Math.min(100, mars2033Progress * 100))
+                : Math.max(0, Math.min(100, (hudDay - TLI_DAY) / (MISSION_DAYS - TLI_DAY) * 100));
             document.getElementById('timeline-slider').style.background =
                 `linear-gradient(90deg, #ff6b35 0%, #6ec6ff ${pct}%, rgba(255,255,255,0.08) ${pct}%)`;
 
             // Phase labels
-            [['pl-launch',0,0.106],['pl-tli',0.106,0.15],['pl-transit',0.15,0.53],
-             ['pl-flyby',0.53,0.63],['pl-return',0.63,0.95],['pl-reentry',0.95,1]
-            ].forEach(([id,s,e]) => {
-                document.getElementById(id).classList.toggle('active', hudT >= s && hudT < e);
-            });
+            if (isMars2033TimelineView()) {
+                [
+                    ['pl-launch', 'Depart', 0, 0.03],
+                    ['pl-tli', 'Cruise', 0.03, mars2033ArrivalProgress],
+                    ['pl-transit', 'Arrive Mars', mars2033ArrivalProgress, Math.min(1, mars2033ArrivalProgress + 0.03)],
+                    ['pl-flyby', 'Stay', Math.min(1, mars2033ArrivalProgress + 0.03), mars2033DepartMarsProgress],
+                    ['pl-return', 'Depart Mars', mars2033DepartMarsProgress, Math.min(1, mars2033DepartMarsProgress + 0.03)],
+                    ['pl-reentry', 'Return', Math.min(1, mars2033DepartMarsProgress + 0.03), 1.0001]
+                ].forEach(([id, label, start, end]) => {
+                    const el = document.getElementById(id);
+                    el.textContent = label;
+                    el.classList.toggle('active', mars2033Progress >= start && mars2033Progress < end);
+                });
+            } else {
+                [['pl-launch','Launch',0,0.106],['pl-tli','TLI',0.106,0.15],['pl-transit','Transit',0.15,0.53],
+                 ['pl-flyby','Flyby',0.53,0.63],['pl-return','Return',0.63,0.95],['pl-reentry','Entry',0.95,1]
+                ].forEach(([id, label, start, end]) => {
+                    const el = document.getElementById(id);
+                    el.textContent = label;
+                    el.classList.toggle('active', hudT >= start && hudT < end);
+                });
+            }
 
             // Phase text (matches real Artemis II timeline)
             let phase = 'Mission Complete';
-            if (hudDay < 1.06) phase = 'Earth Orbit';
-            else if (hudDay < 1.5) phase = 'Translunar Injection';
-            else if (hudDay < 5.3) phase = 'Translunar Coast';
-            else if (hudDay < 6.3) phase = 'Lunar Flyby';
-            else if (hudDay < 9.5) phase = 'Return Transit';
-            else if (hudDay < 10) phase = 'Re-entry';
+            if (isMars2033TimelineView()) {
+                if (mars2033TimelineMs < MARS_2033_ARRIVE_MARS_MS) phase = 'Outbound Transfer';
+                else if (mars2033TimelineMs < MARS_2033_DEPART_MARS_MS) phase = 'Mars Surface Window';
+                else if (mars2033TimelineMs < MARS_2033_RETURN_EARTH_MS) phase = 'Return Transfer';
+                else phase = 'Earth Return';
+            } else {
+                if (hudDay < 1.06) phase = 'Earth Orbit';
+                else if (hudDay < 1.5) phase = 'Translunar Injection';
+                else if (hudDay < 5.3) phase = 'Translunar Coast';
+                else if (hudDay < 6.3) phase = 'Lunar Flyby';
+                else if (hudDay < 9.5) phase = 'Return Transit';
+                else if (hudDay < 10) phase = 'Re-entry';
+            }
             document.getElementById('phase-text').textContent = phase;
 
             // MET counter
-            const metMs = Math.max(0, hudElapsedMs);
-            const metD = Math.floor(metMs / 86400000);
-            const metH = Math.floor((metMs % 86400000) / 3600000);
+            const metMs = isMars2033TimelineView()
+                ? Math.max(0, mars2033TimelineMs - MARS_2033_DEPART_EARTH_MS)
+                : Math.max(0, hudElapsedMs);
+            const metD = Math.floor(metMs / MS_PER_DAY);
+            const metH = Math.floor((metMs % MS_PER_DAY) / 3600000);
             const metM = Math.floor((metMs % 3600000) / 60000);
             const metS = Math.floor((metMs % 60000) / 1000);
             document.getElementById('met-counter').textContent =
@@ -1710,7 +2884,9 @@
             document.getElementById('velocity').textContent = vel.toFixed(2);
 
             // Mission day
-            document.getElementById('mission-day').textContent = `Day ${Math.floor(hudDay) + 1} of 10`;
+            document.getElementById('mission-day').textContent = isMars2033TimelineView()
+                ? `Day ${Math.floor(mars2033MissionDay) + 1} of ${Math.round(MARS_2033_MISSION_DAYS)}`
+                : `Day ${Math.floor(hudDay) + 1} of 10`;
 
             // Render
             composer.render();
@@ -1732,11 +2908,13 @@
             const elapsed = now - LAUNCH_TIME;
             const t = Math.max(0, Math.min(elapsed / MISSION_DURATION_MS, 1.0));
             const day = t * MISSION_DAYS;
-            const solarInitDay = Math.max(0, elapsed / 86400000);
+            document.getElementById('planet-date-input').value = msToDateInputValue(solarBaseDateMs);
+            lastPlanetDateInputValue = msToDateInputValue(solarBaseDateMs);
 
             for (const name in solarPlanets) {
                 const planet = solarPlanets[name];
-                planet.group.position.copy(getPlanetLocalPos(planet.data, solarInitDay));
+                planet.group.position.copy(getPlanetLocalPos(planet.data, solarBaseDateMs));
+                refreshSolarOrbitGeometry(planet, solarBaseDateMs);
             }
 
             const moonKm = getMoonPos(day);
@@ -1746,10 +2924,13 @@
             camera.position.set(mid.x, 100, mid.z + 60);
             controls.target.copy(mid);
             controls.update();
+            starBackgroundGroup.position.copy(camera.position);
             cameraMode = 'earth-moon';
             activeView = 'earth-moon';
-            document.getElementById('btn-earth-moon').classList.add('active');
+            syncActiveButtons();
             updatePlaybackButton();
+            if (getHashFocusValue()) applyFocusHash();
+            else setFocusHash('earthmoon');
         })();
 
         setTimeout(() => {
