@@ -342,6 +342,21 @@
             width: 100%; position: relative; margin-bottom: 12px;
             height: 16px; display: flex; align-items: center;
         }
+        .timeline-marker {
+            position: absolute;
+            top: -4px;
+            bottom: -4px;
+            width: 2px;
+            border-radius: 999px;
+            background: rgba(180, 124, 255, 0.9);
+            box-shadow: 0 0 10px rgba(180, 124, 255, 0.35);
+            transform: translateX(-50%);
+            pointer-events: none;
+            display: none;
+        }
+        .timeline-marker.visible {
+            display: block;
+        }
         .timeline-slider {
             -webkit-appearance: none; appearance: none;
             width: 100%; height: 3px; border-radius: 2px; outline: none;
@@ -401,6 +416,33 @@
         .hint-btn.sim-active {
             background: rgba(255,107,53,0.15); border-color: rgba(255,107,53,0.3); color: #ff8855;
         }
+        .hint-select-wrap {
+            min-width: 135px;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .hint-select {
+            background: rgba(10,12,20,0.6);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 7px 12px;
+            min-width: 135px;
+            color: rgba(255,255,255,0.7);
+            font-size: 11px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            backdrop-filter: blur(24px);
+            transition: all 0.3s;
+            outline: none;
+        }
+        .hint-select:hover,
+        .hint-select:focus {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.18);
+            color: #fff;
+        }
         .sim-group { position: relative; }
         .sim-dropdown {
             display: none; position: absolute; right: 0; top: 100%; margin-top: 4px;
@@ -458,6 +500,14 @@
             font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums;
             color: rgba(255,255,255,0.25); letter-spacing: 1.5px; margin-top: 4px;
         }
+        .data-source {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.28);
+            margin-top: 8px;
+        }
 
         /* Connection line indicator */
         .dist-line-label {
@@ -484,6 +534,7 @@
                 <span id="phase-text">In Transit to Moon</span>
             </div>
             <div class="met-counter" id="met-counter">T+00:00:00:00</div>
+            <div class="data-source" id="trajectory-source">Trajectory Data: Embedded JPL Horizons Fallback</div>
         </div>
     </div>
 
@@ -540,6 +591,8 @@
                        onchange="onPlanetDateChange(this.value)">
             </div>
             <div class="progress-track" id="progress-track">
+                <div class="timeline-marker" id="timeline-marker-arrive" aria-hidden="true"></div>
+                <div class="timeline-marker" id="timeline-marker-depart" aria-hidden="true"></div>
                 <input type="range" class="timeline-slider" id="timeline-slider"
                        min="0" max="10000" value="0"
                        oninput="onTimelineScrub(this.value)">
@@ -598,9 +651,17 @@
     </div>
 
     <div id="controls-hint">
-        <button class="hint-btn" id="btn-follow" onclick="toggleFollow()">Follow Orion</button>
-        <button class="hint-btn" onclick="focusEarth()">Focus Earth</button>
-        <button class="hint-btn" onclick="focusMoon()">Focus Moon</button>
+        <div class="hint-select-wrap">
+            <select class="hint-select" id="ship-style" onchange="onShipStyleChange(this.value)">
+                <option value="sphere" selected>Orion</option>
+                <option value="futurama">Futurama</option>
+                <option value="orion">Fireball</option>
+                <option value="hotdog">Hotdog</option>
+            </select>
+        </div>
+        <button class="hint-btn" id="btn-follow" onclick="toggleFollow()">Follow Spacecraft</button>
+        <button class="hint-btn" id="btn-earth" onclick="focusEarth()">Focus Earth</button>
+        <button class="hint-btn" id="btn-moon" onclick="focusMoon()">Focus Moon</button>
         <button class="hint-btn" id="btn-earth-moon" onclick="focusEarthMoon()">Earth &amp; Moon</button>
         <button class="hint-btn" id="btn-solar-system" onclick="focusSolarSystem()">Solar System</button>
         <button class="hint-btn" id="btn-mars-2033" onclick="focusMars2033()">Mars 2033</button>
@@ -635,9 +696,15 @@
     <script type="module">
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
         import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { unzipSync, strFromU8 } from 'https://cdn.jsdelivr.net/npm/fflate@0.8.2/esm/browser.js';
+
+        const DEFAULT_BROWSER_TITLE = 'Artemis II — Live Mission Tracker';
+        const SHIP_STYLE_STORAGE_KEY = 'space.shipStyle';
+        const SHIP_STYLE_OPTIONS = new Set(['sphere', 'orion', 'futurama', 'hotdog']);
 
         // ═══════════════════════════════════════════
         // CONSTANTS
@@ -670,6 +737,8 @@
         const SOLAR_ORBIT_TUBE_MIN = 12;
         const SOLAR_ORBIT_TUBE_MAX = 38;
         const DEFAULT_SOLAR_DATE = new Date();
+        const NASA_AROW_POST_API = 'https://www.nasa.gov/wp-json/wp/v2/posts/943368';
+        const NASA_AROW_FETCH_TIMEOUT_MS = 12000;
         const DEFAULT_SOLAR_DATE_MS = Date.UTC(
             DEFAULT_SOLAR_DATE.getUTCFullYear(),
             DEFAULT_SOLAR_DATE.getUTCMonth(),
@@ -778,9 +847,9 @@
 
         function getMoonPos(day) {
             // Same timing as trajectory data
-            if (day <= TRAJ_START_DAY) return horizonsToThree(NASA_MOON[0]);
+            if (day <= TRAJ_START_DAY) return moonDataToThree(NASA_MOON[0]);
             const maxDay = TRAJ_START_DAY + (NASA_MOON.length - 1) * TRAJ_STEP_DAYS;
-            if (day >= maxDay) return horizonsToThree(NASA_MOON[NASA_MOON.length - 1]);
+            if (day >= maxDay) return moonDataToThree(NASA_MOON[NASA_MOON.length - 1]);
 
             const fIdx = (day - TRAJ_START_DAY) / TRAJ_STEP_DAYS;
             const i = Math.floor(fIdx);
@@ -793,10 +862,10 @@
             const i3 = Math.min(N - 1, i + 2);
 
             return catmullRom(
-                horizonsToThree(NASA_MOON[i0]),
-                horizonsToThree(NASA_MOON[i1]),
-                horizonsToThree(NASA_MOON[i2]),
-                horizonsToThree(NASA_MOON[i3]), t
+                moonDataToThree(NASA_MOON[i0]),
+                moonDataToThree(NASA_MOON[i1]),
+                moonDataToThree(NASA_MOON[i2]),
+                moonDataToThree(NASA_MOON[i3]), t
             );
         }
 
@@ -852,6 +921,7 @@
         const TRAJ_START_DAY = (3 + 24 - 22.5833) / 24; // ~0.184 days
         const TRAJ_STEP_DAYS = 2 / 24; // 2 hours between points
         const TRAJ_N = NASA_TRAJ.length; // 107 points
+        let liveTrajectorySamples = [];
 
         // Catmull-Rom interpolation for smooth curve through real data
         function catmullRom(p0, p1, p2, p3, t) {
@@ -863,12 +933,29 @@
             );
         }
 
+        const J2000_OBLIQUITY_RAD = THREE.MathUtils.degToRad(23.439291111);
+        const J2000_OBLIQUITY_COS = Math.cos(J2000_OBLIQUITY_RAD);
+        const J2000_OBLIQUITY_SIN = Math.sin(J2000_OBLIQUITY_RAD);
+
         // Convert Horizons EME2000 [X,Y,Z] → Three.js [X,Z,Y] (Y-up)
         function horizonsToThree(d) {
             return new THREE.Vector3(d[0], d[2], d[1]);
         }
 
-        function getTrajectoryPos(day) {
+        // Embedded Moon vectors were sampled from Horizons in the ecliptic plane.
+        // Rotate them into J2000/EME2000 equatorial so they align with NASA's Orion OEM.
+        function eclipticToEquatorial(d) {
+            const x = d[0];
+            const y = d[1] * J2000_OBLIQUITY_COS - d[2] * J2000_OBLIQUITY_SIN;
+            const z = d[1] * J2000_OBLIQUITY_SIN + d[2] * J2000_OBLIQUITY_COS;
+            return [x, y, z];
+        }
+
+        function moonDataToThree(d) {
+            return horizonsToThree(eclipticToEquatorial(d));
+        }
+
+        function getFallbackTrajectoryPos(day) {
             // Before data starts: hold at first point
             if (day <= TRAJ_START_DAY) return horizonsToThree(NASA_TRAJ[0]);
             // After data ends: hold at last point
@@ -900,7 +987,7 @@
 
         // Pre-generate full trajectory curve — directly iterate post-TLI data
         // with clamped Catmull-Rom neighbors (never touches pre-TLI points)
-        function buildTrajectoryCurve() {
+        function buildFallbackTrajectoryCurve() {
             const pts = [];
             const SUBDIV = 10; // subdivisions per data segment for smoothness
             for (let i = TLI_INDEX; i < TRAJ_N - 1; i++) {
@@ -922,6 +1009,172 @@
             const last = horizonsToThree(NASA_TRAJ[TRAJ_N - 1]);
             pts.push(new THREE.Vector3(last.x * SCALE, last.y * SCALE, last.z * SCALE));
             return pts;
+        }
+
+        function getLiveTrajectoryBounds() {
+            if (!liveTrajectorySamples.length) return null;
+            return {
+                startDay: liveTrajectorySamples[0].day,
+                endDay: liveTrajectorySamples[liveTrajectorySamples.length - 1].day
+            };
+        }
+
+        function interpolateTrajectorySamples(samples, day) {
+            if (!samples.length) return horizonsToThree(NASA_TRAJ[0]);
+            if (day <= samples[0].day) return samples[0].position.clone();
+            if (day >= samples[samples.length - 1].day) return samples[samples.length - 1].position.clone();
+
+            let low = 0;
+            let high = samples.length - 1;
+            while (low + 1 < high) {
+                const mid = Math.floor((low + high) / 2);
+                if (samples[mid].day <= day) low = mid;
+                else high = mid;
+            }
+
+            const s0 = samples[Math.max(0, low - 1)].position;
+            const s1 = samples[low].position;
+            const s2 = samples[Math.min(samples.length - 1, low + 1)].position;
+            const s3 = samples[Math.min(samples.length - 1, low + 2)].position;
+            const span = Math.max(1e-9, samples[low + 1].day - samples[low].day);
+            const t = (day - samples[low].day) / span;
+            return catmullRom(s0, s1, s2, s3, t);
+        }
+
+        function getTrajectoryPos(day) {
+            if (liveTrajectorySamples.length >= 2) {
+                return interpolateTrajectorySamples(liveTrajectorySamples, day);
+            }
+            return getFallbackTrajectoryPos(day);
+        }
+
+        function buildLiveTrajectoryCurve() {
+            return liveTrajectorySamples.map(sample =>
+                new THREE.Vector3(
+                    sample.position.x * SCALE,
+                    sample.position.y * SCALE,
+                    sample.position.z * SCALE
+                )
+            );
+        }
+
+        function buildTrajectoryCurve() {
+            if (liveTrajectorySamples.length >= 2) {
+                return buildLiveTrajectoryCurve();
+            }
+            return buildFallbackTrajectoryCurve();
+        }
+
+        function getTrajectoryCurveBounds() {
+            const liveBounds = getLiveTrajectoryBounds();
+            if (liveBounds) return liveBounds;
+            return {
+                startDay: TLI_DAY,
+                endDay: TRAJ_START_DAY + (TRAJ_N - 1) * TRAJ_STEP_DAYS
+            };
+        }
+
+        function getTrajectoryCurveProgress(day) {
+            const bounds = getTrajectoryCurveBounds();
+            if (day <= bounds.startDay) return 0;
+            if (day >= bounds.endDay) return 1;
+            return (day - bounds.startDay) / Math.max(1e-9, bounds.endDay - bounds.startDay);
+        }
+
+        function setTrajectorySourceLabel(text) {
+            const el = document.getElementById('trajectory-source');
+            if (el) el.textContent = `Trajectory Data: ${text}`;
+        }
+
+        function extractArowZipUrl(postPayload) {
+            const rendered = postPayload?.content?.rendered || '';
+            const match = rendered.match(/https:\/\/www\.nasa\.gov\/wp-content\/uploads\/[^"'\\s<>]*artemis-ii-oem[^"'\\s<>]*\.zip(?:\?[^"'\\s<>]*)?/i);
+            if (!match) {
+                throw new Error('NASA AROW ephemeris ZIP URL not found.');
+            }
+            return match[0].replace(/&amp;/g, '&');
+        }
+
+        function parseArowOem(text) {
+            const samples = [];
+            const linePattern = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?)\s+([+-]?\d+(?:\.\d+)?(?:[Ee][+-]?\d+)?)\s+([+-]?\d+(?:\.\d+)?(?:[Ee][+-]?\d+)?)\s+([+-]?\d+(?:\.\d+)?(?:[Ee][+-]?\d+)?)\s+([+-]?\d+(?:\.\d+)?(?:[Ee][+-]?\d+)?)\s+([+-]?\d+(?:\.\d+)?(?:[Ee][+-]?\d+)?)\s+([+-]?\d+(?:\.\d+)?(?:[Ee][+-]?\d+)?)$/;
+            for (const rawLine of text.split(/\r?\n/)) {
+                const line = rawLine.trim();
+                if (!line || line.startsWith('COMMENT') || line.startsWith('META_') || line.includes('=')) continue;
+                const match = line.match(linePattern);
+                if (!match) continue;
+                const timeMs = Date.parse(`${match[1]}Z`);
+                if (!Number.isFinite(timeMs)) continue;
+                samples.push({
+                    timeMs,
+                    day: (timeMs - LAUNCH_TIME) / MS_PER_DAY,
+                    position: horizonsToThree([
+                        Number(match[2]),
+                        Number(match[3]),
+                        Number(match[4])
+                    ])
+                });
+            }
+            return samples;
+        }
+
+        async function fetchWithTimeout(url, options = {}, timeoutMs = NASA_AROW_FETCH_TIMEOUT_MS) {
+            const controller = new AbortController();
+            const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+            try {
+                return await fetch(url, {
+                    ...options,
+                    mode: 'cors',
+                    signal: controller.signal
+                });
+            } finally {
+                window.clearTimeout(timeoutId);
+            }
+        }
+
+        async function loadLiveArowTrajectory() {
+            const postResponse = await fetchWithTimeout(NASA_AROW_POST_API, {
+                headers: { Accept: 'application/json' }
+            });
+            if (!postResponse.ok) {
+                throw new Error(`NASA AROW post lookup failed: ${postResponse.status}`);
+            }
+
+            const postPayload = await postResponse.json();
+            const zipUrl = extractArowZipUrl(postPayload);
+            const zipResponse = await fetchWithTimeout(zipUrl, {}, NASA_AROW_FETCH_TIMEOUT_MS * 2);
+            if (!zipResponse.ok) {
+                throw new Error(`NASA ephemeris ZIP download failed: ${zipResponse.status}`);
+            }
+
+            const zipBytes = new Uint8Array(await zipResponse.arrayBuffer());
+            const zipContents = unzipSync(zipBytes);
+            const oemName = Object.keys(zipContents).find(name => /\.asc$/i.test(name));
+            if (!oemName) {
+                throw new Error('NASA ephemeris ZIP did not contain an OEM .asc file.');
+            }
+
+            const samples = parseArowOem(strFromU8(zipContents[oemName]));
+            if (samples.length < 2) {
+                throw new Error('NASA ephemeris OEM did not contain enough samples.');
+            }
+
+            liveTrajectorySamples = samples;
+            setTrajectorySourceLabel('Live NASA AROW Ephemeris');
+            console.info('Loaded live NASA AROW trajectory.', {
+                samples: samples.length,
+                zipUrl
+            });
+        }
+
+        async function initLiveArowTrajectory() {
+            try {
+                await loadLiveArowTrajectory();
+            } catch (error) {
+                liveTrajectorySamples = [];
+                setTrajectorySourceLabel('Embedded JPL Horizons Fallback');
+                console.warn('NASA AROW live trajectory unavailable, using embedded fallback.', error);
+            }
         }
 
         // ═══════════════════════════════════════════
@@ -958,6 +1211,7 @@
         scene.add(solarSystemGroup);
         const starBackgroundGroup = new THREE.Group();
         scene.add(starBackgroundGroup);
+        let sunSprite = null;
 
         // ═══════════════════════════════════════════
         // STARFIELD
@@ -1124,6 +1378,8 @@
         // ═══════════════════════════════════════════
         // MOON
         // ═══════════════════════════════════════════
+        const moonOrbitVisualGroup = new THREE.Group();
+        scene.add(moonOrbitVisualGroup);
         const moonGroup = new THREE.Group();
         const moonGeo = new THREE.SphereGeometry(mR, 64, 32);
         const moonMat = new THREE.MeshStandardMaterial({
@@ -1200,7 +1456,7 @@
         // Full Moon orbit — compute orbital plane from real data, draw complete circle
         (() => {
             // Moon positions in Three.js space (km)
-            const mp = NASA_MOON.map(d => horizonsToThree(d));
+            const mp = NASA_MOON.map(d => moonDataToThree(d));
 
             // Orbital plane normal from cross product of two widely separated positions
             const midIdx = Math.floor(mp.length / 2);
@@ -1227,23 +1483,25 @@
             }
 
             // Main orbit line — white, clearly visible
-            scene.add(new THREE.Line(
+            const moonOrbitReferenceLine = new THREE.Line(
                 new THREE.BufferGeometry().setFromPoints(orbitPts),
-                new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.2 })
-            ));
+                new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.07 })
+            );
+            moonOrbitVisualGroup.add(moonOrbitReferenceLine);
             // Subtle glow
-            scene.add(new THREE.Line(
+            const moonOrbitReferenceGlow = new THREE.Line(
                 new THREE.BufferGeometry().setFromPoints(orbitPts),
-                new THREE.LineBasicMaterial({ color: 0x8888aa, transparent: true, opacity: 0.06 })
-            ));
+                new THREE.LineBasicMaterial({ color: 0x8888aa, transparent: true, opacity: 0.025 })
+            );
+            moonOrbitVisualGroup.add(moonOrbitReferenceGlow);
         })();
 
         // Highlighted Moon arc during mission (brighter white)
         const moonArcPts = NASA_MOON.map(d => {
-            const v = horizonsToThree(d);
+            const v = moonDataToThree(d);
             return new THREE.Vector3(v.x * SCALE, v.y * SCALE, v.z * SCALE);
         });
-        scene.add(new THREE.Line(
+        moonOrbitVisualGroup.add(new THREE.Line(
             new THREE.BufferGeometry().setFromPoints(moonArcPts),
             new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.45 })
         ));
@@ -1251,7 +1509,9 @@
         // ═══════════════════════════════════════════
         // TRAJECTORY
         // ═══════════════════════════════════════════
-        const trajPts = buildTrajectoryCurve(4000);
+        let trajPts = buildTrajectoryCurve();
+        const trajectoryGroup = new THREE.Group();
+        scene.add(trajectoryGroup);
 
         // Full predicted path (visible dashed)
         const fullTrajLine = new THREE.Line(
@@ -1262,21 +1522,30 @@
             })
         );
         fullTrajLine.computeLineDistances();
-        scene.add(fullTrajLine);
+        trajectoryGroup.add(fullTrajLine);
 
         // Second wider line for glow effect on full path
         const fullTrajGlow = new THREE.Line(
             new THREE.BufferGeometry().setFromPoints(trajPts),
             new THREE.LineBasicMaterial({ color: 0xff6b35, transparent: true, opacity: 0.04 })
         );
-        scene.add(fullTrajGlow);
+        trajectoryGroup.add(fullTrajGlow);
 
         // Traveled path (bright)
         const traveledLine = new THREE.Line(
             new THREE.BufferGeometry(),
             new THREE.LineBasicMaterial({ color: 0xff6b35, transparent: true, opacity: 0.9 })
         );
-        scene.add(traveledLine);
+        trajectoryGroup.add(traveledLine);
+
+        function refreshTrajectoryVisuals() {
+            trajPts = buildTrajectoryCurve();
+            fullTrajLine.geometry.dispose();
+            fullTrajLine.geometry = new THREE.BufferGeometry().setFromPoints(trajPts);
+            fullTrajLine.computeLineDistances();
+            fullTrajGlow.geometry.dispose();
+            fullTrajGlow.geometry = new THREE.BufferGeometry().setFromPoints(trajPts);
+        }
 
         // Earth-Moon connection line
         const emLine = new THREE.Line(
@@ -1374,11 +1643,180 @@
         scene.add(orionGroup);
 
         // ═══════════════════════════════════════════
+        // PLANET EXPRESS SPACECRAFT
+        // ═══════════════════════════════════════════
+        const planetExpressGroup = new THREE.Group();
+        const gltfLoader = new GLTFLoader();
+        let planetExpressModel = null;
+        let planetExpressEngineLight = null;
+
+        gltfLoader.load(
+            'spaceship Goodnews.glb',
+            (gltf) => {
+                planetExpressModel = gltf.scene;
+                planetExpressModel.scale.set(0.5, 0.5, 0.5);
+                planetExpressModel.rotation.y = Math.PI;
+                planetExpressEngineLight = new THREE.PointLight(0xff6b35, 1.5, 5);
+                planetExpressEngineLight.position.set(0, 0, -2);
+                planetExpressModel.add(planetExpressEngineLight);
+                planetExpressGroup.add(planetExpressModel);
+                console.info('Planet Express ship loaded successfully.');
+            },
+            undefined,
+            (error) => {
+                console.warn('Planet Express ship failed to load.', error);
+            }
+        );
+
+        const planetExpressLabel = createLabel('Planet Express', '#ff6b35');
+        planetExpressLabel.position.set(0, 0.6, 0);
+        planetExpressGroup.add(planetExpressLabel);
+        planetExpressGroup.visible = false;
+        scene.add(planetExpressGroup);
+
+        const sphereCraftGroup = new THREE.Group();
+        const sphereCraft = new THREE.Mesh(
+            new THREE.SphereGeometry(0.16, 18, 18),
+            new THREE.MeshBasicMaterial({ color: 0xff8844, transparent: true, opacity: 0.95 })
+        );
+        sphereCraftGroup.add(sphereCraft);
+        const sphereLabel = createLabel('ORION', '#ffb088');
+        sphereLabel.position.set(0, 0.6, 0);
+        sphereCraftGroup.add(sphereLabel);
+        sphereCraftGroup.visible = false;
+        scene.add(sphereCraftGroup);
+
+        const hotdogCraftGroup = new THREE.Group();
+        hotdogCraftGroup.scale.set(1.45, 1.45, 1.45);
+        const hotdogBunMat = new THREE.MeshStandardMaterial({
+            color: 0xd6a05c,
+            roughness: 0.9,
+            metalness: 0.04
+        });
+        const hotdogBunShadowMat = new THREE.MeshStandardMaterial({
+            color: 0xb78042,
+            roughness: 0.94,
+            metalness: 0.03
+        });
+        const hotdogSausageMat = new THREE.MeshStandardMaterial({
+            color: 0x9b4328,
+            roughness: 0.72,
+            metalness: 0.05
+        });
+        const condimentRedMat = new THREE.MeshStandardMaterial({
+            color: 0xd62f1a,
+            roughness: 0.6,
+            metalness: 0.02
+        });
+        const condimentYellowMat = new THREE.MeshStandardMaterial({
+            color: 0xe3ba1f,
+            roughness: 0.55,
+            metalness: 0.02
+        });
+        const relishMat = new THREE.MeshStandardMaterial({
+            color: 0x4d9f3d,
+            roughness: 0.78,
+            metalness: 0.02
+        });
+        const sesameMat = new THREE.MeshStandardMaterial({
+            color: 0xf7e6bf,
+            roughness: 0.85,
+            metalness: 0.01
+        });
+        const nozzleMat = new THREE.MeshStandardMaterial({
+            color: 0x8ea0b8,
+            roughness: 0.34,
+            metalness: 0.78
+        });
+        const bunLower = new THREE.Mesh(new THREE.CapsuleGeometry(0.24, 1.02, 8, 18), hotdogBunMat);
+        bunLower.rotation.z = Math.PI / 2;
+        bunLower.scale.set(1, 0.46, 0.86);
+        bunLower.position.set(0, -0.1, 0);
+        hotdogCraftGroup.add(bunLower);
+        const bunLowerShadow = new THREE.Mesh(new THREE.CapsuleGeometry(0.18, 0.95, 8, 16), hotdogBunShadowMat);
+        bunLowerShadow.rotation.z = Math.PI / 2;
+        bunLowerShadow.scale.set(1, 0.18, 0.72);
+        bunLowerShadow.position.set(0, -0.18, 0);
+        hotdogCraftGroup.add(bunLowerShadow);
+        const bunUpper = new THREE.Mesh(new THREE.CapsuleGeometry(0.22, 0.96, 8, 18), hotdogBunMat);
+        bunUpper.rotation.z = Math.PI / 2;
+        bunUpper.scale.set(1, 0.34, 0.78);
+        bunUpper.position.set(0.04, 0.16, 0);
+        hotdogCraftGroup.add(bunUpper);
+        const bunLeftWall = new THREE.Mesh(new THREE.CapsuleGeometry(0.09, 0.94, 8, 12), hotdogBunMat);
+        bunLeftWall.rotation.z = Math.PI / 2;
+        bunLeftWall.rotation.x = 0.18;
+        bunLeftWall.scale.set(1, 0.22, 0.28);
+        bunLeftWall.position.set(0, 0.04, 0.16);
+        hotdogCraftGroup.add(bunLeftWall);
+        const bunRightWall = bunLeftWall.clone();
+        bunRightWall.position.z = -0.16;
+        bunRightWall.rotation.x = -0.18;
+        hotdogCraftGroup.add(bunRightWall);
+        const sausage = new THREE.Mesh(new THREE.CapsuleGeometry(0.14, 1.1, 8, 16), hotdogSausageMat);
+        sausage.rotation.z = Math.PI / 2;
+        sausage.position.set(0.02, 0.04, 0);
+        hotdogCraftGroup.add(sausage);
+        const ketchupCurve = new THREE.CatmullRomCurve3([
+            new THREE.Vector3(-0.58, 0.18, -0.035),
+            new THREE.Vector3(-0.28, 0.235, 0.045),
+            new THREE.Vector3(0.03, 0.18, -0.03),
+            new THREE.Vector3(0.32, 0.24, 0.045),
+            new THREE.Vector3(0.6, 0.18, -0.035)
+        ]);
+        hotdogCraftGroup.add(new THREE.Mesh(new THREE.TubeGeometry(ketchupCurve, 36, 0.026, 8, false), condimentRedMat));
+        const mustardCurve = new THREE.CatmullRomCurve3([
+            new THREE.Vector3(-0.56, 0.14, 0.05),
+            new THREE.Vector3(-0.24, 0.205, -0.03),
+            new THREE.Vector3(0.1, 0.145, 0.04),
+            new THREE.Vector3(0.38, 0.205, -0.03),
+            new THREE.Vector3(0.62, 0.145, 0.04)
+        ]);
+        hotdogCraftGroup.add(new THREE.Mesh(new THREE.TubeGeometry(mustardCurve, 36, 0.02, 8, false), condimentYellowMat));
+        const relishCurve = new THREE.CatmullRomCurve3([
+            new THREE.Vector3(-0.54, 0.11, 0.0),
+            new THREE.Vector3(-0.18, 0.16, 0.055),
+            new THREE.Vector3(0.14, 0.1, -0.04),
+            new THREE.Vector3(0.42, 0.16, 0.055),
+            new THREE.Vector3(0.58, 0.11, 0.0)
+        ]);
+        hotdogCraftGroup.add(new THREE.Mesh(new THREE.TubeGeometry(relishCurve, 30, 0.018, 7, false), relishMat));
+        [
+            [-0.42, 0.28, 0.11, -0.45],
+            [-0.18, 0.31, -0.08, -0.2],
+            [0.02, 0.285, 0.07, 0.15],
+            [0.26, 0.315, -0.06, -0.1],
+            [0.48, 0.27, 0.1, 0.35]
+        ].forEach(([x, y, z, rz]) => {
+            const seed = new THREE.Mesh(new THREE.CapsuleGeometry(0.012, 0.04, 4, 6), sesameMat);
+            seed.rotation.z = rz;
+            seed.rotation.x = 0.55;
+            seed.position.set(x, y, z);
+            hotdogCraftGroup.add(seed);
+        });
+        const leftNozzle = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.18, 10), nozzleMat);
+        leftNozzle.rotation.z = Math.PI / 2;
+        leftNozzle.position.set(-0.7, 0.01, 0.08);
+        hotdogCraftGroup.add(leftNozzle);
+        const rightNozzle = leftNozzle.clone();
+        rightNozzle.position.z = -0.08;
+        hotdogCraftGroup.add(rightNozzle);
+        const hotdogEngineGlow = new THREE.PointLight(0xff8a3c, 1.6, 4.5);
+        hotdogEngineGlow.position.set(-0.8, 0.02, 0);
+        hotdogCraftGroup.add(hotdogEngineGlow);
+        const hotdogLabel = createLabel('HOTDOG', '#ffca8c');
+        hotdogLabel.position.set(0, 0.88, 0);
+        hotdogCraftGroup.add(hotdogLabel);
+        hotdogCraftGroup.visible = false;
+        scene.add(hotdogCraftGroup);
+
+        // ═══════════════════════════════════════════
         // LIGHTING
         // ═══════════════════════════════════════════
         const sunDir = new THREE.DirectionalLight(0xffffff, 2.5);
         sunDir.position.set(300, 80, -150);
         scene.add(sunDir);
+        scene.add(sunDir.target);
         scene.add(new THREE.AmbientLight(0x1a1a3a, 0.4));
 
         // Sun glow sprite with procedural circular texture
@@ -1394,7 +1832,7 @@
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, 128, 128);
             const tex = new THREE.CanvasTexture(c);
-            const sunSprite = new THREE.Sprite(new THREE.SpriteMaterial({
+            sunSprite = new THREE.Sprite(new THREE.SpriteMaterial({
                 map: tex, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending
             }));
             sunSprite.position.copy(EXISTING_SUN_SPRITE_POS);
@@ -1446,6 +1884,14 @@
             if (!value) return DEFAULT_SOLAR_DATE_MS;
             const [year, month, day] = value.split('-').map(Number);
             return Date.UTC(year, month - 1, day, 12, 0, 0);
+        }
+
+        function getMissionDateMs(day) {
+            return LAUNCH_TIME + day * MS_PER_DAY;
+        }
+
+        function getEarthMoonViewCenter() {
+            return earthGroup.position.clone().lerp(moonGroup.position, 0.45);
         }
 
         function solveKeplerDegrees(Mdeg, e) {
@@ -1572,6 +2018,16 @@
                 center.clone().add(endDir.multiplyScalar(radius)).add(new THREE.Vector3(0, lift, 0)),
                 end.clone()
             ]).getPoints(36);
+        }
+
+        function buildPlanetTimedPath(planet, startMs, endMs, stepDays = 12) {
+            const pts = [];
+            const stepMs = stepDays * MS_PER_DAY;
+            for (let ms = startMs; ms < endMs; ms += stepMs) {
+                pts.push(getPlanetLocalPos(planet, ms));
+            }
+            pts.push(getPlanetLocalPos(planet, endMs));
+            return pts;
         }
 
         function samplePathPoints(points, t) {
@@ -1797,13 +2253,61 @@
         let pausedSolarDateMs = null;
         let scrubSolarDateMs = null;
         let prevFrameTime = Date.now();
-        let sunAngle = 0;          // Sun orbital angle
         let targetPos = null;
         let targetLook = null;
         let lastPlanetDateInputValue = '';
         let observerAngleResetTimeout = null;
         let currentObserverVantagePoint = 'From Space';
         let zoomForwardAmount = 0;
+        let currentShipStyle = 'sphere';
+
+        function getActiveSpacecraftGroup() {
+            switch (currentShipStyle) {
+                case 'sphere':
+                    return sphereCraftGroup;
+                case 'futurama':
+                    return planetExpressGroup;
+                case 'hotdog':
+                    return hotdogCraftGroup;
+                default:
+                    return orionGroup;
+            }
+        }
+
+        function getFollowTargetGroup() {
+            return activeView === 'mars-2033' ? mars2033CraftGroup : getActiveSpacecraftGroup();
+        }
+
+        function getFollowCameraOffset() {
+            return activeView === 'mars-2033'
+                ? new THREE.Vector3(2200, 1400, 3600)
+                : new THREE.Vector3(4.5, 4.5, 10);
+        }
+
+        function syncSpacecraftStyleVisibility() {
+            orionGroup.visible = currentShipStyle === 'orion';
+            sphereCraftGroup.visible = currentShipStyle === 'sphere';
+            planetExpressGroup.visible = currentShipStyle === 'futurama';
+            hotdogCraftGroup.visible = currentShipStyle === 'hotdog';
+        }
+
+        function persistShipStyle(style) {
+            try {
+                localStorage.setItem(SHIP_STYLE_STORAGE_KEY, style);
+            } catch (error) {
+                console.warn('Unable to persist ship style.', error);
+            }
+        }
+
+        function loadPersistedShipStyle() {
+            try {
+                const storedStyle = localStorage.getItem(SHIP_STYLE_STORAGE_KEY);
+                return SHIP_STYLE_OPTIONS.has(storedStyle) ? storedStyle : 'sphere';
+            } catch (error) {
+                console.warn('Unable to read persisted ship style.', error);
+                return 'sphere';
+            }
+        }
 
         function getHashFocusValue() {
             return new URLSearchParams(window.location.hash.replace(/^#/, '')).get('focus');
@@ -1819,8 +2323,8 @@
             cameraMode = 'follow-orion';
             syncActiveButtons();
             controls.enabled = true;
-            const op = orionGroup.position.clone();
-            targetPos = op.clone().add(new THREE.Vector3(4.5, 4.5, 10));
+            const op = getFollowTargetGroup().position.clone();
+            targetPos = op.clone().add(getFollowCameraOffset());
             targetLook = op.clone();
             setFocusHash('orion');
         }
@@ -1935,11 +2439,9 @@
         }
 
         function getCurrentViewAnchorTarget() {
-            if (cameraMode === 'follow-orion') return orionGroup.position.clone();
+            if (cameraMode === 'follow-orion') return getFollowTargetGroup().position.clone();
             if (cameraMode === 'earth-moon') {
-                const mid = moonGroup.position.clone().multiplyScalar(0.45);
-                mid.y = 0;
-                return mid;
+                return getEarthMoonViewCenter();
             }
             if (cameraMode === 'mars-2033') {
                 return controls.target.clone();
@@ -1955,10 +2457,7 @@
         }
 
         function getEarthWorldPosForView() {
-            if (activeView === 'earth-moon' || cameraMode === 'follow-orion') {
-                return new THREE.Vector3(0, 0, 0);
-            }
-            return getSolarBodyWorldPos('Earth');
+            return earthGroup.position.clone();
         }
 
         function getMoonWorldPosForView() {
@@ -1999,7 +2498,7 @@
                 case 'From Earth':
                     return activeView === 'earth-moon' ? moonGroup.position.clone() : getSolarBodyWorldPos('Sun');
                 case 'From Moon':
-                    return new THREE.Vector3(0, 0, 0);
+                    return earthGroup.position.clone();
                 case 'From Mars':
                     return getSolarBodyWorldPos('Earth');
                 case 'From Astroid Belt':
@@ -2151,6 +2650,8 @@
 
         function clearActiveButtons() {
             document.getElementById('btn-follow').classList.remove('active');
+            document.getElementById('btn-earth').classList.remove('active');
+            document.getElementById('btn-moon').classList.remove('active');
             document.getElementById('btn-earth-moon').classList.remove('active');
             document.getElementById('btn-solar-system').classList.remove('active');
             document.getElementById('btn-mars-2033').classList.remove('active');
@@ -2161,9 +2662,24 @@
             document.getElementById(id).classList.add('active');
         }
 
+        function updateBrowserTitle() {
+            document.title =
+                activeView === 'mars-2033' ? 'Mars 2033 - 1005 Day Mission' :
+                activeView === 'solar-system' ? 'Solar System' :
+                DEFAULT_BROWSER_TITLE;
+        }
+
         function syncActiveButtons() {
             if (cameraMode === 'follow-orion') {
                 setActiveViewButton('btn-follow');
+                updateBrowserTitle();
+                return;
+            }
+
+            const hashFocus = getHashFocusValue();
+            if (cameraMode === 'free' && (hashFocus === 'earth' || hashFocus === 'moon')) {
+                setActiveViewButton(hashFocus === 'earth' ? 'btn-earth' : 'btn-moon');
+                updateBrowserTitle();
                 return;
             }
 
@@ -2172,6 +2688,7 @@
                 activeView === 'solar-system' ? 'btn-solar-system' :
                 'btn-earth-moon'
             );
+            updateBrowserTitle();
         }
 
         function getCurrentSceneDay(now = Date.now()) {
@@ -2225,7 +2742,38 @@
             }
         };
 
-        // Follow Orion: orbit controls stay enabled, target tracks Orion
+        window.onShipStyleChange = (value) => {
+            currentShipStyle = SHIP_STYLE_OPTIONS.has(value) ? value : 'sphere';
+            persistShipStyle(currentShipStyle);
+            syncSpacecraftStyleVisibility();
+            if (cameraMode === 'follow-orion') {
+                const activeCraft = getFollowTargetGroup().position.clone();
+                targetPos = activeCraft.clone().add(getFollowCameraOffset());
+                targetLook = activeCraft;
+            }
+        };
+
+        function restartArtemisMission(now = Date.now()) {
+            speedMult = 1;
+            simStartReal = null;
+            simStartDay = null;
+            solarSimStartDateMs = null;
+            paused = false;
+            pausedDay = null;
+            pausedSolarDateMs = null;
+            scrubDay = 0;
+            scrubSolarDateMs = null;
+            solarBaseDateMs = getMissionDateMs(0);
+            lastPlanetDateInputValue = '';
+            document.getElementById('btn-reset').style.display = 'none';
+            document.getElementById('sim-dropdown').classList.remove('open');
+            updateSimButton();
+            updatePlaybackButton();
+            const slider = document.getElementById('timeline-slider');
+            slider.value = '0';
+            slider.style.background = 'linear-gradient(90deg, #ff6b35 0%, #6ec6ff 0%, rgba(255,255,255,0.08) 0%)';
+        }
+
         window.toggleFollow = () => {
             if (cameraMode === 'follow-orion') {
                 cameraMode = 'free';
@@ -2237,6 +2785,12 @@
                 );
                 return;
             }
+            if ((activeView === 'earth-moon' || activeView === 'solar-system') && getCurrentSceneDay() >= MISSION_DAYS - 0.001) {
+                restartArtemisMission();
+            }
+            if (speedMult < 30000) {
+                setSpeed(30000);
+            }
             focusOrion();
         };
 
@@ -2245,8 +2799,9 @@
             syncActiveButtons();
             controls.enabled = true;
             zoomForwardAmount = 0;
-            targetPos = new THREE.Vector3(0, eR * 6, eR * 8);
-            targetLook = new THREE.Vector3(0, 0, 0);
+            const ep = earthGroup.position.clone();
+            targetPos = ep.clone().add(new THREE.Vector3(0, eR * 6, eR * 8));
+            targetLook = ep;
             setFocusHash('earth');
         };
 
@@ -2267,9 +2822,8 @@
             syncActiveButtons();
             controls.enabled = true;
             zoomForwardAmount = 0;
-            const mid = moonGroup.position.clone().multiplyScalar(0.45);
-            mid.y = 0;
-            targetPos = new THREE.Vector3(mid.x, 100, mid.z + 60);
+            const mid = getEarthMoonViewCenter();
+            targetPos = mid.clone().add(new THREE.Vector3(0, 100, 60));
             targetLook = mid.clone();
             setFocusHash('earthmoon');
         };
@@ -2554,7 +3108,6 @@
             const realT = Math.max(0, Math.min(realElapsed / MISSION_DURATION_MS, 1.0));
             const realDay = realT * MISSION_DAYS;
             const solarDateMs = getCurrentSolarDateMs(now);
-            const solarDate = new Date(solarDateMs);
 
             // Simulated time for 3D scene
             let simDayRaw;
@@ -2571,6 +3124,12 @@
             }
             const simDay = Math.max(0, Math.min(simDayRaw, MISSION_DAYS));
             const simT = simDay / MISSION_DAYS;
+            const missionDateMs = getMissionDateMs(simDay);
+            const sceneSolarDateMs =
+                activeView === 'earth-moon' || cameraMode === 'follow-orion'
+                    ? missionDateMs
+                    : solarDateMs;
+            const solarDate = new Date(solarDateMs);
             const starScale = activeView === 'solar-system' ? SOLAR_STAR_SCALE : 1;
             starBackgroundGroup.scale.lerp(
                 new THREE.Vector3(starScale, starScale, starScale),
@@ -2580,40 +3139,57 @@
             // ── Update Solar System ──
             for (const name in solarPlanets) {
                 const planet = solarPlanets[name];
-                if (Math.abs(solarDateMs - planet.lastOrbitRefreshMs) >= 30 * MS_PER_DAY) {
-                    refreshSolarOrbitGeometry(planet, solarDateMs);
+                if (Math.abs(sceneSolarDateMs - planet.lastOrbitRefreshMs) >= 30 * MS_PER_DAY) {
+                    refreshSolarOrbitGeometry(planet, sceneSolarDateMs);
                 }
-                planet.group.position.copy(getPlanetLocalPos(planet.data, solarDateMs));
+                planet.group.position.copy(getPlanetLocalPos(planet.data, sceneSolarDateMs));
                 const heliocentricOrbitMode = activeView === 'solar-system' || activeView === 'mars-2033';
+                const earthMoonWideOrbitMode =
+                    activeView === 'earth-moon' &&
+                    camera.position.distanceTo(controls.target) > 120;
+                const earthMoonOrbitLineMode = activeView === 'earth-moon';
+                const showStandaloneEarth = !(name === 'Earth' && cameraMode === 'follow-orion');
                 const basePlanetVisualBoost = activeView === 'solar-system'
                     ? (name === 'Earth' || name === 'Mars' ? 40 : 28)
                     : activeView === 'mars-2033'
                     ? (name === 'Earth' || name === 'Mars' ? 9 : 6)
+                    : earthMoonWideOrbitMode
+                    ? (name === 'Earth' || name === 'Mars' ? 14 : 10)
                     : 1;
-                const zoomResponsiveBoost = heliocentricOrbitMode
+                const zoomResponsiveBoost = (heliocentricOrbitMode || earthMoonWideOrbitMode)
                     ? Math.min(
-                        activeView === 'solar-system' ? 5.5 : 4.5,
+                        activeView === 'solar-system' ? 5.5 : earthMoonWideOrbitMode ? 5.2 : 4.5,
                         Math.max(
                             1,
-                            camera.position.distanceTo(controls.target) / (activeView === 'solar-system' ? 180000 : 50000)
+                            camera.position.distanceTo(controls.target) / (
+                                activeView === 'solar-system' ? 180000 :
+                                earthMoonWideOrbitMode ? 6000 :
+                                50000
+                            )
                         )
                     )
                     : 1;
                 const planetVisualBoost = basePlanetVisualBoost * zoomResponsiveBoost;
                 planet.visual.scale.setScalar(planetVisualBoost);
+                planet.visual.visible = showStandaloneEarth;
+                planet.label.visible = showStandaloneEarth;
                 planet.label.position.y = planet.baseLabelY + (planetVisualBoost - 1) * planet.bodyRadius * 1.35;
                 planet.body.material.opacity = heliocentricOrbitMode ? 1 : 0.96;
-                planet.marker.visible = activeView === 'solar-system' || activeView === 'mars-2033';
-                planet.marker.material.opacity = activeView === 'solar-system' ? 0.96 : activeView === 'mars-2033' ? 0.92 : 0.8;
-                planet.glow.material.opacity = activeView === 'mars-2033' ? 0.34 : activeView === 'solar-system' ? 0.48 : 0.18;
+                planet.marker.visible = showStandaloneEarth && (heliocentricOrbitMode || earthMoonWideOrbitMode) && !(name === 'Earth' && !heliocentricOrbitMode);
+                planet.marker.material.opacity = activeView === 'solar-system' ? 0.96 : activeView === 'mars-2033' ? 0.92 : earthMoonWideOrbitMode ? 0.95 : 0.8;
+                planet.glow.material.opacity = activeView === 'mars-2033' ? 0.34 : activeView === 'solar-system' ? 0.48 : earthMoonWideOrbitMode ? 0.4 : 0.18;
                 if (planet.sprite) {
-                    planet.sprite.material.opacity = activeView === 'mars-2033' ? 0.7 : activeView === 'solar-system' ? 0.92 : 0.42;
+                    planet.sprite.material.opacity = activeView === 'mars-2033' ? 0.7 : activeView === 'solar-system' ? 0.92 : earthMoonWideOrbitMode ? 0.88 : 0.42;
                 }
                 planet.orbitTube.material.opacity = heliocentricOrbitMode
                     ? (name === 'Earth' ? 0.26 : 0.18)
                     : 0;
-                planet.orbitLine.material.opacity = heliocentricOrbitMode
+                planet.orbitLine.material.opacity = !showStandaloneEarth
+                    ? 0
+                    : heliocentricOrbitMode
                     ? Math.min(0.95, planet.orbitBaseOpacity + 0.36)
+                    : earthMoonOrbitLineMode
+                    ? (name === 'Earth' ? 0.28 : 0.26)
                     : planet.orbitBaseOpacity;
             }
 
@@ -2624,7 +3200,13 @@
             const mars2033OutHeight = Math.max(2000, mars2033EarthDepart.distanceTo(mars2033MarsArrive) * 0.12);
             const mars2033BackHeight = Math.max(2000, mars2033MarsDepart.distanceTo(mars2033EarthReturn) * 0.12);
             const mars2033Outbound = buildTransferSegment(mars2033EarthDepart, mars2033MarsArrive, mars2033OutHeight, 1200);
-            const mars2033Stay = buildHoldArc(mars2033MarsArrive, mars2033Outbound[mars2033Outbound.length - 1], mars2033MarsDepart, mars2033OutHeight * 0.06).slice(1);
+            mars2033Outbound[mars2033Outbound.length - 1].copy(mars2033MarsArrive);
+            const mars2033Stay = buildPlanetTimedPath(
+                solarPlanets.Mars.data,
+                MARS_2033_ARRIVE_MARS_MS,
+                MARS_2033_DEPART_MARS_MS,
+                10
+            ).slice(1);
             const mars2033Return = buildTransferSegment(mars2033MarsDepart, mars2033EarthReturn, -mars2033BackHeight, 950).slice(1);
             const mars2033Pts = mars2033Outbound.concat(mars2033Stay, mars2033Return);
             mars2033TransferLine.geometry.dispose();
@@ -2671,13 +3253,21 @@
             mars2033Orb.material.opacity = 0.92;
 
             // ── Update Moon ──
+            const earthWorld = getPlanetWorldPos(solarPlanets.Earth.data, sceneSolarDateMs);
+            earthGroup.position.copy(earthWorld);
             const moonKm = getMoonPos(simDay);
-            moonGroup.position.set(moonKm.x * SCALE, moonKm.y * SCALE, moonKm.z * SCALE);
+            const moonOffset = new THREE.Vector3(moonKm.x * SCALE, moonKm.y * SCALE, moonKm.z * SCALE);
+            moonOrbitVisualGroup.position.copy(earthWorld);
+            moonGroup.position.copy(earthWorld.clone().add(moonOffset));
 
             // ── Update Orion ──
             const orionKm = getTrajectoryPos(simDay);
             const orionSc = new THREE.Vector3(orionKm.x * SCALE, orionKm.y * SCALE, orionKm.z * SCALE);
-            orionGroup.position.copy(orionSc);
+            const orionWorld = earthWorld.clone().add(orionSc);
+            orionGroup.position.copy(orionWorld);
+            sphereCraftGroup.position.copy(orionWorld);
+            planetExpressGroup.position.copy(orionWorld);
+            hotdogCraftGroup.position.copy(orionWorld);
 
             // Orient along trajectory
             const nextKm = getTrajectoryPos(Math.min(simDay + 0.005, MISSION_DAYS));
@@ -2685,42 +3275,49 @@
                 new THREE.Vector3(nextKm.x, nextKm.y, nextKm.z),
                 orionKm
             ).normalize();
-            orionGroup.lookAt(orionSc.clone().add(dir.clone().multiplyScalar(SCALE)));
+            const orionLookTarget = orionWorld.clone().add(dir.clone().multiplyScalar(SCALE));
+            orionGroup.lookAt(orionLookTarget);
+            sphereCraftGroup.lookAt(orionLookTarget);
+            planetExpressGroup.lookAt(orionLookTarget);
+            hotdogCraftGroup.lookAt(orionLookTarget);
 
             // Beacon pulse
             beacon.material.opacity = 0.7 + 0.3 * Math.sin(now * 0.006);
             engineGlow.intensity = 2 + Math.sin(now * 0.004) * 1;
+            if (planetExpressEngineLight) {
+                planetExpressEngineLight.intensity = 1.5 + Math.sin(now * 0.005) * 0.5;
+            }
 
             // ── Traveled trajectory ──
-            // trajPts maps data indices TLI_INDEX..TRAJ_N-1, 10 subdivisions each
-            // Convert simDay to matching data index
-            const dataIdx = (simDay - TRAJ_START_DAY) / TRAJ_STEP_DAYS;
-            const trajIdx = Math.max(0, (dataIdx - TLI_INDEX) * 10);
-            const traveledIdx = Math.min(trajPts.length, Math.max(2, Math.ceil(trajIdx)));
+            const trajProgress = getTrajectoryCurveProgress(simDay);
+            const traveledIdx = Math.min(
+                trajPts.length,
+                Math.max(2, Math.ceil(trajProgress * Math.max(1, trajPts.length - 1)) + 1)
+            );
             const traveled = trajPts.slice(0, traveledIdx);
             traveledLine.geometry.dispose();
             traveledLine.geometry = new THREE.BufferGeometry().setFromPoints(traveled);
+            trajectoryGroup.position.copy(earthWorld);
+            trajectoryGroup.visible = activeView === 'earth-moon' || cameraMode === 'follow-orion';
 
             // ── Earth-Moon line ──
             emLine.geometry.dispose();
             emLine.geometry = new THREE.BufferGeometry().setFromPoints([
-                new THREE.Vector3(0, 0, 0), moonGroup.position.clone()
+                earthGroup.position.clone(), moonGroup.position.clone()
             ]);
             emLine.computeLineDistances();
+            emLine.visible = activeView === 'earth-moon' || cameraMode === 'follow-orion';
 
             // ── Earth rotation (360° in 24h, accelerated with sim) ──
             const earthAngularVel = (2 * Math.PI) / 86400; // rad/s
             earthMesh.rotation.y += earthAngularVel * dt * (speedMult > 1 ? speedMult : 1);
 
-            // ── Sun orbital motion (Earth orbits Sun in 365.25 days) ──
-            const sunAngularVel = (2 * Math.PI) / (365.25 * 86400); // rad/s
-            sunAngle += sunAngularVel * dt * (speedMult > 1 ? speedMult : 1);
-            const sunDist = AU_KM * SCALE;
-            sunDir.position.set(
-                Math.cos(sunAngle) * sunDist,
-                80,
-                -Math.sin(sunAngle) * sunDist * 0.5
-            );
+            // ── Sun alignment ──
+            if (sunSprite) {
+                sunSprite.position.copy(SOLAR_CENTER);
+            }
+            sunDir.position.copy(SOLAR_CENTER.clone().add(new THREE.Vector3(300, 80, -150)));
+            sunDir.target.position.copy(earthGroup.position);
 
             // ── Camera ──
             // Animate transitions first (button clicks)
@@ -2739,11 +3336,11 @@
                     // Move camera with Orion — keep relative offset stable
                     const offset = camera.position.clone().sub(controls.target);
                     const dolly = getCurrentForwardDirection().multiplyScalar(zoomForwardAmount);
-                    controls.target.copy(orionSc).add(dolly);
-                    camera.position.copy(orionSc).add(offset).add(dolly);
+                    const activeCraft = getActiveSpacecraftGroup().position.clone();
+                    controls.target.copy(activeCraft).add(dolly);
+                    camera.position.copy(activeCraft).add(offset).add(dolly);
                 } else if (cameraMode === 'earth-moon') {
-                    const mid = moonGroup.position.clone().multiplyScalar(0.45);
-                    mid.y = 0;
+                    const mid = getEarthMoonViewCenter();
                     const offset = camera.position.clone().sub(controls.target);
                     const dolly = getCurrentForwardDirection().multiplyScalar(zoomForwardAmount);
                     controls.target.copy(mid).add(dolly);
@@ -2763,6 +3360,9 @@
             earthLabel.lookAt(camera.position);
             moonLabel.lookAt(camera.position);
             orionLabel.lookAt(camera.position);
+            sphereLabel.lookAt(camera.position);
+            planetExpressLabel.lookAt(camera.position);
+            hotdogLabel.lookAt(camera.position);
             mars2033CraftLabel.lookAt(camera.position);
             for (const name in solarPlanets) {
                 solarPlanets[name].label.lookAt(camera.position);
@@ -2817,12 +3417,23 @@
                 : Math.max(0, Math.min(100, (hudDay - TLI_DAY) / (MISSION_DAYS - TLI_DAY) * 100));
             document.getElementById('timeline-slider').style.background =
                 `linear-gradient(90deg, #ff6b35 0%, #6ec6ff ${pct}%, rgba(255,255,255,0.08) ${pct}%)`;
+            const arriveMarker = document.getElementById('timeline-marker-arrive');
+            const departMarker = document.getElementById('timeline-marker-depart');
+            if (isMars2033TimelineView()) {
+                arriveMarker.style.left = `${mars2033ArrivalProgress * 100}%`;
+                departMarker.style.left = `${mars2033DepartMarsProgress * 100}%`;
+                arriveMarker.classList.add('visible');
+                departMarker.classList.add('visible');
+            } else {
+                arriveMarker.classList.remove('visible');
+                departMarker.classList.remove('visible');
+            }
 
             // Phase labels
             if (isMars2033TimelineView()) {
                 [
                     ['pl-launch', 'Depart', 0, 0.03],
-                    ['pl-tli', 'Cruise', 0.03, mars2033ArrivalProgress],
+                    ['pl-tli', '', 0.03, mars2033ArrivalProgress],
                     ['pl-transit', 'Arrive Mars', mars2033ArrivalProgress, Math.min(1, mars2033ArrivalProgress + 0.03)],
                     ['pl-flyby', 'Stay', Math.min(1, mars2033ArrivalProgress + 0.03), mars2033DepartMarsProgress],
                     ['pl-return', 'Depart Mars', mars2033DepartMarsProgress, Math.min(1, mars2033DepartMarsProgress + 0.03)],
@@ -2832,6 +3443,8 @@
                     el.textContent = label;
                     el.classList.toggle('active', mars2033Progress >= start && mars2033Progress < end);
                 });
+                document.getElementById('pl-transit').style.transform = 'translateX(-20px)';
+                document.getElementById('pl-flyby').style.transform = 'translateX(-10px)';
             } else {
                 [['pl-launch','Launch',0,0.106],['pl-tli','TLI',0.106,0.15],['pl-transit','Transit',0.15,0.53],
                  ['pl-flyby','Flyby',0.53,0.63],['pl-return','Return',0.63,0.95],['pl-reentry','Entry',0.95,1]
@@ -2840,6 +3453,8 @@
                     el.textContent = label;
                     el.classList.toggle('active', hudT >= start && hudT < end);
                 });
+                document.getElementById('pl-transit').style.transform = '';
+                document.getElementById('pl-flyby').style.transform = '';
             }
 
             // Phase text (matches real Artemis II timeline)
@@ -2908,20 +3523,36 @@
             const elapsed = now - LAUNCH_TIME;
             const t = Math.max(0, Math.min(elapsed / MISSION_DURATION_MS, 1.0));
             const day = t * MISSION_DAYS;
+            currentShipStyle = loadPersistedShipStyle();
             document.getElementById('planet-date-input').value = msToDateInputValue(solarBaseDateMs);
             lastPlanetDateInputValue = msToDateInputValue(solarBaseDateMs);
 
+            const initialMissionDateMs = getMissionDateMs(day);
             for (const name in solarPlanets) {
                 const planet = solarPlanets[name];
-                planet.group.position.copy(getPlanetLocalPos(planet.data, solarBaseDateMs));
-                refreshSolarOrbitGeometry(planet, solarBaseDateMs);
+                planet.group.position.copy(getPlanetLocalPos(planet.data, initialMissionDateMs));
+                refreshSolarOrbitGeometry(planet, initialMissionDateMs);
             }
 
+            const earthWorld = getPlanetWorldPos(solarPlanets.Earth.data, initialMissionDateMs);
+            earthGroup.position.copy(earthWorld);
             const moonKm = getMoonPos(day);
-            moonGroup.position.set(moonKm.x * SCALE, moonKm.y * SCALE, moonKm.z * SCALE);
-            const mid = moonGroup.position.clone().multiplyScalar(0.45);
-            mid.y = 0;
-            camera.position.set(mid.x, 100, mid.z + 60);
+            const moonOffset = new THREE.Vector3(moonKm.x * SCALE, moonKm.y * SCALE, moonKm.z * SCALE);
+            moonOrbitVisualGroup.position.copy(earthWorld);
+            moonGroup.position.copy(earthWorld.clone().add(moonOffset));
+            const orionKm = getTrajectoryPos(day);
+            const orionOffset = new THREE.Vector3(orionKm.x * SCALE, orionKm.y * SCALE, orionKm.z * SCALE);
+            const orionWorld = earthWorld.clone().add(orionOffset);
+            trajectoryGroup.position.copy(earthWorld);
+            trajectoryGroup.visible = true;
+            orionGroup.position.copy(orionWorld);
+            sphereCraftGroup.position.copy(orionWorld);
+            planetExpressGroup.position.copy(orionWorld);
+            hotdogCraftGroup.position.copy(orionWorld);
+            document.getElementById('ship-style').value = currentShipStyle;
+            syncSpacecraftStyleVisibility();
+            const mid = getEarthMoonViewCenter();
+            camera.position.copy(mid.clone().add(new THREE.Vector3(0, 100, 60)));
             controls.target.copy(mid);
             controls.update();
             starBackgroundGroup.position.copy(camera.position);
@@ -2932,6 +3563,10 @@
             if (getHashFocusValue()) applyFocusHash();
             else setFocusHash('earthmoon');
         })();
+
+        initLiveArowTrajectory().then(() => {
+            refreshTrajectoryVisuals();
+        });
 
         setTimeout(() => {
             document.getElementById('loading').classList.add('hidden');
