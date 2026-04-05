@@ -931,8 +931,8 @@
             // STL is in mm (~338mm wide). Scale to ~0.06 scene units
             const s = 0.00018;
             orionMesh.scale.set(s, s, s);
-            // STL Z-up → Three.js Y-up
-            orionMesh.rotation.x = -Math.PI / 2;
+            // Capsule nose (STL +Z) → prograde (-Z in Three.js, where lookAt points)
+            orionMesh.rotation.x = Math.PI;
             orionGroup.add(orionMesh);
         });
 
