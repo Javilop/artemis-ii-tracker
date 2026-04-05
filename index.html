@@ -733,39 +733,13 @@
                     vec3 viewDir = normalize(cameraPosition - vWorldPos);
                     float rim = 1.0 - max(0.0, dot(viewDir, vNormal));
                     float intensity = coeff * pow(rim, power);
-                    gl_FragColor = vec4(glowColor, intensity * 0.35);
+                    gl_FragColor = vec4(glowColor, intensity * 0.1);
                 }
             `
         });
         earthGroup.add(new THREE.Mesh(atmosGeo, atmosMat));
 
-        // Outer glow halo (large for overview visibility)
-        const outerGlowGeo = new THREE.SphereGeometry(eR * 1.8, 32, 16);
-        const outerGlowMat = new THREE.ShaderMaterial({
-            transparent: true, side: THREE.BackSide, depthWrite: false,
-            uniforms: { glowColor: { value: new THREE.Color(0x2266dd) } },
-            vertexShader: `
-                varying vec3 vNormal;
-                varying vec3 vWorldPos;
-                void main() {
-                    vNormal = normalize(normalMatrix * normal);
-                    vWorldPos = (modelMatrix * vec4(position, 1.0)).xyz;
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                }
-            `,
-            fragmentShader: `
-                uniform vec3 glowColor;
-                varying vec3 vNormal;
-                varying vec3 vWorldPos;
-                void main() {
-                    vec3 viewDir = normalize(cameraPosition - vWorldPos);
-                    float rim = max(0.0, dot(viewDir, vNormal));
-                    float intensity = pow(rim, 2.0);
-                    gl_FragColor = vec4(glowColor, intensity * 0.12);
-                }
-            `
-        });
-        earthGroup.add(new THREE.Mesh(outerGlowGeo, outerGlowMat));
+        // (outer glow removed — inner atmosphere is enough)
 
         // Earth beacon sprite — visible at overview distance
         (() => {
@@ -822,32 +796,7 @@
 
         moonGroup.add(new THREE.Mesh(moonGeo, moonMat));
 
-        // Moon glow (extended for visibility)
-        const moonGlowGeo = new THREE.SphereGeometry(mR * 1.8, 32, 16);
-        const moonGlowMat = new THREE.ShaderMaterial({
-            transparent: true, side: THREE.BackSide, depthWrite: false,
-            uniforms: { glowColor: { value: new THREE.Color(0x888899) } },
-            vertexShader: `
-                varying vec3 vNormal;
-                varying vec3 vWorldPos;
-                void main() {
-                    vNormal = normalize(normalMatrix * normal);
-                    vWorldPos = (modelMatrix * vec4(position, 1.0)).xyz;
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                }
-            `,
-            fragmentShader: `
-                uniform vec3 glowColor;
-                varying vec3 vNormal;
-                varying vec3 vWorldPos;
-                void main() {
-                    vec3 viewDir = normalize(cameraPosition - vWorldPos);
-                    float rim = max(0.0, dot(viewDir, vNormal));
-                    gl_FragColor = vec4(glowColor, pow(rim, 1.5) * 0.12);
-                }
-            `
-        });
-        moonGroup.add(new THREE.Mesh(moonGlowGeo, moonGlowMat));
+        // (Moon has no atmosphere — glow removed)
 
         // Moon beacon sprite
         (() => {
@@ -1101,7 +1050,7 @@
         // ═══════════════════════════════════════════
         // STATE & CONTROLS
         // ═══════════════════════════════════════════
-        // Camera modes: 'free', 'follow-orion', 'overview'
+        // Camera modes: 'free', 'follow-orion', 'follow-moon', 'overview'
         let cameraMode = 'free';
         let speedMult = 1;
         let simStartReal = null;   // Date.now() when sim was activated
@@ -1139,7 +1088,7 @@
         };
 
         window.focusMoon = () => {
-            cameraMode = 'free';
+            cameraMode = 'follow-moon';
             clearActiveButtons();
             controls.enabled = true;
             const mp = moonGroup.position;
@@ -1152,10 +1101,9 @@
             cameraMode = 'overview';
             clearActiveButtons();
             controls.enabled = true;
-            const mid = moonGroup.position.clone().multiplyScalar(0.45);
+            const mid = moonGroup.position.clone().multiplyScalar(0.35);
             mid.y = 0;
-            const dir = mid.clone().normalize();
-            targetPos = new THREE.Vector3(mid.x + dir.x * 60, 100, mid.z + dir.z * 60);
+            targetPos = new THREE.Vector3(mid.x, 180, mid.z + 110);
             targetLook = mid.clone();
         };
 
@@ -1396,6 +1344,11 @@
                     const offset = camera.position.clone().sub(controls.target);
                     controls.target.copy(orionSc);
                     camera.position.copy(orionSc).add(offset);
+                } else if (cameraMode === 'follow-moon') {
+                    const mp = moonGroup.position;
+                    const offset = camera.position.clone().sub(controls.target);
+                    controls.target.copy(mp);
+                    camera.position.copy(mp).add(offset);
                 } else if (cameraMode === 'overview') {
                     const mid = moonGroup.position.clone().multiplyScalar(0.45);
                     mid.y = 0;
@@ -1503,8 +1456,7 @@
             moonGroup.position.set(moonKm.x * SCALE, moonKm.y * SCALE, moonKm.z * SCALE);
             const mid = moonGroup.position.clone().multiplyScalar(0.45);
             mid.y = 0;
-            const dir = mid.clone().normalize();
-            camera.position.set(mid.x + dir.x * 60, 100, mid.z + dir.z * 60);
+            camera.position.set(mid.x, 180, mid.z + 110);
             controls.target.copy(mid);
             controls.update();
             cameraMode = 'overview';
