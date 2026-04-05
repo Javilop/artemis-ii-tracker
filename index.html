@@ -1028,12 +1028,25 @@
         // ═══════════════════════════════════════════
         // LIGHTING
         // ═══════════════════════════════════════════
+        // Sun direction from JPL Horizons: geocentric EME2000, 2026-Apr-01
+        // X=1.4676e8, Y=2.596e7, Z=1.125e7 km → horizonsToThree → [X,Z,Y]
+        // Normalized direction: [0.982, 0.075, 0.174]
+        const SUN_INIT_ANGLE = Math.atan2(0.1737, 0.982); // ~10° in XZ plane
+        const SUN_ELEVATION = 26;  // Y component: 0.075 * 350
+        const SUN_LIGHT_DIST = 350;
+        const SUN_SPRITE_DIST = 580;
+
         const sunDir = new THREE.DirectionalLight(0xffffff, 2.5);
-        sunDir.position.set(300, 80, -150);
+        sunDir.position.set(
+            Math.cos(SUN_INIT_ANGLE) * SUN_LIGHT_DIST,
+            SUN_ELEVATION,
+            Math.sin(SUN_INIT_ANGLE) * SUN_LIGHT_DIST
+        );
         scene.add(sunDir);
         scene.add(new THREE.AmbientLight(0x1a1a3a, 0.4));
 
         // Sun glow sprite with procedural circular texture
+        let sunSprite;
         (() => {
             const c = document.createElement('canvas');
             c.width = 128; c.height = 128;
@@ -1046,10 +1059,14 @@
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, 128, 128);
             const tex = new THREE.CanvasTexture(c);
-            const sunSprite = new THREE.Sprite(new THREE.SpriteMaterial({
+            sunSprite = new THREE.Sprite(new THREE.SpriteMaterial({
                 map: tex, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending
             }));
-            sunSprite.position.set(500, 120, -250);
+            sunSprite.position.set(
+                Math.cos(SUN_INIT_ANGLE) * SUN_SPRITE_DIST,
+                SUN_ELEVATION * (SUN_SPRITE_DIST / SUN_LIGHT_DIST),
+                Math.sin(SUN_INIT_ANGLE) * SUN_SPRITE_DIST
+            );
             sunSprite.scale.set(40, 40, 1);
             scene.add(sunSprite);
         })();
@@ -1086,7 +1103,6 @@
         let simStartReal = null;   // Date.now() when sim was activated
         let simStartDay = null;    // mission day when sim was activated
         let prevFrameTime = Date.now();
-        let sunAngle = 0;          // Sun orbital angle
         let targetPos = null;
         let targetLook = null;
 
@@ -1317,19 +1333,23 @@
             ]);
             emLine.computeLineDistances();
 
-            // ── Earth rotation (360° in 24h, accelerated with sim) ──
-            const earthAngularVel = (2 * Math.PI) / 86400; // rad/s
-            earthMesh.rotation.y += earthAngularVel * dt * (speedMult > 1 ? speedMult : 1);
+            // ── Earth rotation (one full turn per day, driven by simDay) ──
+            earthMesh.rotation.y = simDay * 2 * Math.PI;
 
-            // ── Sun orbital motion (Earth orbits Sun in 365.25 days) ──
-            const sunAngularVel = (2 * Math.PI) / (365.25 * 86400); // rad/s
-            sunAngle += sunAngularVel * dt * (speedMult > 1 ? speedMult : 1);
-            const sunDist = 350;
+            // ── Sun orbital motion (driven by simDay, from JPL initial angle) ──
+            const sunAngle = SUN_INIT_ANGLE + simDay * (2 * Math.PI / 365.25);
             sunDir.position.set(
-                Math.cos(sunAngle) * sunDist,
-                80,
-                -Math.sin(sunAngle) * sunDist * 0.5
+                Math.cos(sunAngle) * SUN_LIGHT_DIST,
+                SUN_ELEVATION,
+                Math.sin(sunAngle) * SUN_LIGHT_DIST
             );
+            if (sunSprite) {
+                sunSprite.position.set(
+                    Math.cos(sunAngle) * SUN_SPRITE_DIST,
+                    SUN_ELEVATION * (SUN_SPRITE_DIST / SUN_LIGHT_DIST),
+                    Math.sin(sunAngle) * SUN_SPRITE_DIST
+                );
+            }
 
             // ── Camera ──
             // Animate transitions first (button clicks)
