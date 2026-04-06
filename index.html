@@ -631,7 +631,7 @@
         }
 
         #loading {
-            position: fixed; inset: 0; background: #000;
+            position: fixed; inset: 0; background: transparent;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             z-index: 100; transition: opacity 1.2s;
         }
@@ -911,6 +911,13 @@
             futurama2100: 'futurama2100.yaml',
             fireballs2333: 'fireballs2333.yaml',
             starman2018: 'starman2018.config'
+        };
+        const EVENT_LABELS = {
+            orion2026: 'Orion 2026',
+            mars2033: 'Mars 2033',
+            futurama2100: 'Futurama 2100',
+            fireballs2333: 'Fireballs 2333',
+            starman2018: 'Starman 2018'
         };
         const EVENT_IDS = ['orion2026', 'mars2033', 'futurama2100', 'fireballs2333', 'starman2018'];
         const EVENT_OPTIONS = new Set(EVENT_IDS);
@@ -2151,12 +2158,11 @@
             document.getElementById('btn-follow').textContent = spec.followLabel || 'Follow';
         }
 
-        async function hydrateEventMenu(selectedEventId = null) {
+        function hydrateEventMenu(selectedEventId = null) {
             const select = document.getElementById('event');
             if (!select) return;
-            const specs = await Promise.all(EVENT_IDS.map((eventId) => loadEventSpecById(eventId)));
-            select.innerHTML = specs.map((spec) =>
-                `<option value="${spec.id}">${spec.label}</option>`
+            select.innerHTML = EVENT_IDS.map((id) =>
+                `<option value="${id}">${EVENT_LABELS[id] || id}</option>`
             ).join('');
             if (selectedEventId && EVENT_OPTIONS.has(selectedEventId)) {
                 select.value = selectedEventId;
@@ -4237,8 +4243,9 @@
                     : currentEventVehicle === 'model' && isEventView()
                     ? Math.max(420, Math.min(4200, camera.position.distanceTo(controls.target) / 70))
                     : 1;
+            const sphereVisibilityScale = activeView === 'earth-moon' ? (1.25 / 3) : 1.25;
             orionGroup.scale.setScalar(solarCraftScaleBoost);
-            sphereCraftGroup.scale.setScalar(solarCraftScaleBoost * 1.25);
+            sphereCraftGroup.scale.setScalar(solarCraftScaleBoost * sphereVisibilityScale);
             const eventGroupScale = solarCraftScaleBoost * eventModelVisibilityScale;
             eventModelGroup.scale.setScalar(eventGroupScale);
             // Keep the beacon sprite at a constant 1.5 world-units regardless of group scale
@@ -4641,6 +4648,7 @@
             updatePlaybackButton();
         }
 
+        animate();
         initializeApp()
             .then(() => {
                 if (currentEventKind === 'orion') {
@@ -4650,12 +4658,10 @@
                     setTrajectorySourceLabel('Embedded JPL Horizons Fallback');
                 }
                 document.getElementById('loading').classList.add('hidden');
-                animate();
             })
             .catch((error) => {
                 console.error(error);
                 document.getElementById('loading').classList.add('hidden');
-                animate();
             });
     </script>
 </body>
