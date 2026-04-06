@@ -2741,6 +2741,22 @@
                 : new THREE.Vector3(4.5, 4.5, 10);
         }
 
+        function getSolarSystemFocusCamera() {
+            const currentTarget = controls.target.clone();
+            const currentOffset = camera.position.clone().sub(currentTarget);
+            const fallbackOffset = new THREE.Vector3(0, 165000, 435000);
+            const offsetDirection = currentOffset.lengthSq() > 1e-6
+                ? currentOffset.clone().normalize()
+                : fallbackOffset.clone().normalize();
+            const minimumSolarDistance = fallbackOffset.length();
+            const desiredDistance = Math.max(currentOffset.length() * 2.4, minimumSolarDistance);
+
+            return {
+                position: SOLAR_CENTER.clone().add(offsetDirection.multiplyScalar(desiredDistance)),
+                target: SOLAR_CENTER.clone()
+            };
+        }
+
         function snapCameraTo(position, target) {
             targetPos = null;
             targetLook = null;
@@ -3402,8 +3418,9 @@
             syncActiveButtons();
             controls.enabled = true;
             zoomForwardAmount = 0;
-            targetPos = SOLAR_CENTER.clone().add(new THREE.Vector3(0, 165000, 435000));
-            targetLook = SOLAR_CENTER.clone();
+            const focusCamera = getSolarSystemFocusCamera();
+            targetPos = focusCamera.position;
+            targetLook = focusCamera.target;
             if (updateHash) setFocusHash('solarsystem');
         };
 
@@ -3887,7 +3904,7 @@
             mars2033TraveledLine.geometry = new THREE.BufferGeometry().setFromPoints(missionRoutePointsLocal.slice(0, missionTraveledIdx));
             mars2033TransferGlow.geometry.dispose();
             mars2033TransferGlow.geometry = new THREE.BufferGeometry().setFromPoints(missionRoutePointsLocal);
-            const showMissionTransfer = isEventView();
+            const showMissionTransfer = isEventView() || activeView === 'solar-system';
             mars2033TransferLine.visible = showMissionTransfer;
             mars2033TraveledLine.visible = showMissionTransfer;
             mars2033TransferGlow.visible = showMissionTransfer;
@@ -3965,7 +3982,7 @@
             traveledLine.geometry.dispose();
             traveledLine.geometry = new THREE.BufferGeometry().setFromPoints(traveled);
             trajectoryGroup.position.copy(earthWorld);
-            trajectoryGroup.visible = currentEventKind === 'orion' && (activeView === 'earth-moon' || cameraMode === 'follow-orion');
+            trajectoryGroup.visible = currentEventKind === 'orion' && (activeView === 'earth-moon' || activeView === 'solar-system' || cameraMode === 'follow-orion');
 
             // ── Earth-Moon line ──
             emLine.geometry.dispose();
