@@ -1,10 +1,10 @@
 id: fireballs2333
-label: Fireballs 2333 Event
+label: Fireballs 2333
 kind: custom
 vehicle: orion
 follow_label: Follow Fireballs
-mission_name: FIREBALLS 2333 EVENT
-browser_title: Fireballs 2333 Event
+mission_name: FIREBALLS 2333
+browser_title: Fireballs 2333
 overview_label: Event Overview
 overview_view: event
 start_date: 2333-01-08T12:00:00Z

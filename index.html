@@ -7,6 +7,66 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>Artemis II — Live Mission Tracker</title>
+    <script>
+        (() => {
+            const DEFAULT_EVENT_ID = 'orion2026';
+            const EVENT_IDS = new Set(['orion2026', 'mars2033', 'futurama2100', 'fireballs2333']);
+            const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+            const requestedEventId = params.get('event');
+            const eventId = EVENT_IDS.has(requestedEventId) ? requestedEventId : DEFAULT_EVENT_ID;
+            const parseYamlScalar = (yamlText, key) => {
+                const match = yamlText.match(new RegExp(`^${key}:\\s*(.+)$`, 'm'));
+                if (!match) return '';
+                return match[1].trim().replace(/^['"]|['"]$/g, '');
+            };
+
+            window.__initialEventId = eventId;
+            window.__applyInitialEventMeta = (meta) => {
+                if (!meta) return;
+                const titleEl = document.getElementById('mission-title-text');
+                const nameEl = document.getElementById('mission-name');
+                const eventSelect = document.getElementById('event');
+                const overviewButton = document.getElementById('btn-overview');
+                const followButton = document.getElementById('btn-follow');
+
+                if (titleEl) titleEl.textContent = meta.titleText || '';
+                if (nameEl) nameEl.textContent = meta.missionName || '';
+                if (overviewButton) overviewButton.textContent = meta.overviewLabel || 'Overview';
+                if (followButton) followButton.textContent = meta.followLabel || 'Follow';
+                if (eventSelect) {
+                    eventSelect.innerHTML = `<option value="${meta.eventId}">${meta.label}</option>`;
+                    eventSelect.value = meta.eventId;
+                }
+            };
+            window.__initialEventSpecTextPromise = fetch(`./events/${eventId}.yaml`, { cache: 'no-cache' })
+                .then((response) => {
+                    if (!response.ok) {
+                        throw new Error(`Unable to load event spec: events/${eventId}.yaml`);
+                    }
+                    return response.text();
+                });
+            window.__initialEventMetaPromise = window.__initialEventSpecTextPromise
+                .then((yamlText) => {
+                    const label = parseYamlScalar(yamlText, 'label') || eventId;
+                    const missionName = parseYamlScalar(yamlText, 'mission_name');
+                    const browserTitle = parseYamlScalar(yamlText, 'browser_title');
+                    const kind = parseYamlScalar(yamlText, 'kind');
+                    const overviewLabel = parseYamlScalar(yamlText, 'overview_label') || 'Overview';
+                    const followLabel = parseYamlScalar(yamlText, 'follow_label') || 'Follow';
+                    const titleText = kind === 'orion' ? 'NASA · CSA' : '';
+                    if (browserTitle) {
+                        document.title = browserTitle;
+                    }
+                    const meta = { eventId, label, missionName, browserTitle, kind, overviewLabel, followLabel, titleText };
+                    window.__applyInitialEventMeta(meta);
+                    return meta;
+                })
+                .catch((error) => {
+                    console.error(error);
+                    return null;
+                });
+        })();
+    </script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -134,7 +194,6 @@
             height: 16px;
             font-size: 15px;
             line-height: 1;
-            font-weight: 400;
             color: rgba(255,255,255,0.82);
         }
         #btn-play-pause.is-playing .timeline-playback-icon {
@@ -306,6 +365,9 @@
             margin: 6px 0 12px;
         }
         #btn-hide-observer-specs {
+            margin: 0;
+        }
+        #btn-toggle-observer-specs {
             margin: 0;
         }
         .observer-specs-toggle-wrap.hidden {
@@ -755,57 +817,9 @@
     </div>
 
     <script>
-        (() => {
-            const EVENT_BOOTSTRAP = {
-                orion2026: {
-                    kind: 'orion',
-                    label: 'Orion 2026',
-                    missionName: 'ARTEMIS II',
-                    titleText: 'NASA · CSA',
-                    browserTitle: 'Artemis II — Live Mission Tracker'
-                },
-                mars2033: {
-                    kind: 'mars',
-                    label: 'Mars 2033',
-                    missionName: 'MARS 2033',
-                    titleText: '',
-                    browserTitle: 'Mars 2033 - 1005 Day Mission'
-                },
-                futurama2100: {
-                    kind: 'custom',
-                    label: 'Futurama 2100',
-                    missionName: 'FUTURAMA 2100',
-                    titleText: '',
-                    browserTitle: 'Futurama 2100'
-                },
-                fireballs2333: {
-                    kind: 'custom',
-                    label: 'Fireballs 2333 Event',
-                    missionName: 'FIREBALLS 2333 EVENT',
-                    titleText: '',
-                    browserTitle: 'Fireballs 2333 Event'
-                }
-            };
-            const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-            const eventId = params.get('event') || 'orion2026';
-            const bootstrap = EVENT_BOOTSTRAP[eventId] || EVENT_BOOTSTRAP.orion2026;
-            const titleEl = document.getElementById('mission-title-text');
-            const nameEl = document.getElementById('mission-name');
-            const eventSelect = document.getElementById('event');
-            if (titleEl) titleEl.textContent = bootstrap.titleText;
-            if (nameEl) nameEl.textContent = bootstrap.missionName;
-            if (eventSelect) {
-                eventSelect.innerHTML = `<option value="${eventId}">${bootstrap.label}</option>`;
-                eventSelect.value = eventId;
-            }
-            if (bootstrap.browserTitle) {
-                document.title = bootstrap.browserTitle;
-            }
-            window.__initialEventBootstrap = {
-                eventId,
-                ...bootstrap
-            };
-        })();
+        if (window.__initialEventMetaPromise && window.__applyInitialEventMeta) {
+            window.__initialEventMetaPromise.then(window.__applyInitialEventMeta);
+        }
     </script>
 
     <script type="importmap">
@@ -831,16 +845,10 @@
         const EVENT_IDS = ['orion2026', 'mars2033', 'futurama2100', 'fireballs2333'];
         const EVENT_OPTIONS = new Set(EVENT_IDS);
         const EVENT_SPEC_CACHE = new Map();
-        const INITIAL_EVENT_BOOTSTRAP = window.__initialEventBootstrap || {
-            eventId: DEFAULT_EVENT_ID,
-            kind: 'orion',
-            missionName: 'ARTEMIS II',
-            titleText: 'NASA · CSA',
-            browserTitle: DEFAULT_BROWSER_TITLE
-        };
-        const INITIAL_EVENT_ID = EVENT_OPTIONS.has(INITIAL_EVENT_BOOTSTRAP.eventId)
-            ? INITIAL_EVENT_BOOTSTRAP.eventId
+        const INITIAL_EVENT_ID = EVENT_OPTIONS.has(window.__initialEventId)
+            ? window.__initialEventId
             : DEFAULT_EVENT_ID;
+        const INITIAL_EVENT_SPEC_TEXT_PROMISE = window.__initialEventSpecTextPromise || null;
 
         // ═══════════════════════════════════════════
         // CONSTANTS
@@ -893,11 +901,11 @@
         let MARS_2033_INITIAL_CAMERA_TARGET = new THREE.Vector3(8178.805, -290.665, 6261.027);
         let currentEventId = INITIAL_EVENT_ID;
         let currentEventSpec = null;
-        let currentEventKind = INITIAL_EVENT_BOOTSTRAP.kind || 'orion';
+        let currentEventKind = 'orion';
         let currentEventVehicle = 'sphere';
         let currentEventFollowLabel = 'Follow';
-        let currentEventName = INITIAL_EVENT_BOOTSTRAP.missionName || '';
-        let currentEventBrowserTitle = INITIAL_EVENT_BOOTSTRAP.browserTitle || DEFAULT_BROWSER_TITLE;
+        let currentEventName = '';
+        let currentEventBrowserTitle = DEFAULT_BROWSER_TITLE;
         let currentEventInitialView = 'earth-moon';
         let currentEventInitialCameraPos = null;
         let currentEventInitialCameraTarget = null;
@@ -2054,6 +2062,10 @@
             return EVENT_OPTIONS.has(mission) ? mission : null;
         }
 
+        function getRequestedEventId() {
+            return getHashEventValue() || DEFAULT_EVENT_ID;
+        }
+
         function setHashParam(name, value) {
             updateHashParams((params) => {
                 if (value === null || value === undefined || value === '') params.delete(name);
@@ -2077,6 +2089,8 @@
             }
             document.getElementById('mission-title-text').textContent = spec.kind === 'orion' ? 'NASA · CSA' : '';
             document.getElementById('mission-name').textContent = spec.missionName || '';
+            document.getElementById('btn-overview').textContent = spec.overviewLabel || 'Overview';
+            document.getElementById('btn-follow').textContent = spec.followLabel || 'Follow';
         }
 
         async function hydrateEventMenu(selectedEventId = null) {
@@ -2155,11 +2169,16 @@
         async function loadEventSpecById(missionId) {
             const safeMissionId = EVENT_OPTIONS.has(missionId) ? missionId : DEFAULT_EVENT_ID;
             if (EVENT_SPEC_CACHE.has(safeMissionId)) return EVENT_SPEC_CACHE.get(safeMissionId);
-            const response = await fetch(`./events/${safeMissionId}.yaml`, { cache: 'no-cache' });
-            if (!response.ok) {
-                throw new Error(`Unable to load mission spec: events/${safeMissionId}.yaml`);
-            }
-            const parsed = normalizeEventSpec(yaml.load(await response.text()), safeMissionId);
+            const yamlText = safeMissionId === INITIAL_EVENT_ID && INITIAL_EVENT_SPEC_TEXT_PROMISE
+                ? await INITIAL_EVENT_SPEC_TEXT_PROMISE
+                : await (async () => {
+                    const response = await fetch(`./events/${safeMissionId}.yaml`, { cache: 'no-cache' });
+                    if (!response.ok) {
+                        throw new Error(`Unable to load mission spec: events/${safeMissionId}.yaml`);
+                    }
+                    return response.text();
+                })();
+            const parsed = normalizeEventSpec(yaml.load(yamlText), safeMissionId);
             EVENT_SPEC_CACHE.set(safeMissionId, parsed);
             return parsed;
         }
@@ -3414,7 +3433,7 @@
         };
 
         window.addEventListener('hashchange', async () => {
-            const hashMission = getHashEventValue() || DEFAULT_EVENT_ID;
+            const hashMission = getRequestedEventId();
             if (hashMission !== currentEventId) {
                 await applyEventSpecById(hashMission, { updateHash: false, focusDefaultView: false });
             }
@@ -4227,7 +4246,7 @@
         });
 
         async function initializeApp() {
-            const initialEventId = getHashEventValue() || INITIAL_EVENT_ID;
+            const initialEventId = getRequestedEventId();
             const initialSpec = await loadEventSpecById(initialEventId);
             primeEventUi(initialSpec);
             hydrateEventMenu(initialEventId);
