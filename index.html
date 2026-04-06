@@ -4625,20 +4625,25 @@
             const sphereVisibilityScale = activeView === 'earth-moon' ? (1.25 / 6) : 1.25;
             const orionEarthAltitudeKm = Math.max(0, orionWorld.distanceTo(earthWorld) / SCALE - EARTH_RADIUS_KM);
             const isLateEarthApproach = currentEventKind === 'orion' && simDay >= MISSION_DAYS * 0.9 && orionEarthAltitudeKm <= 80000;
+            const focusMoonCraftDistance = camera.position.distanceTo(selectedCraftWorld);
+            const focusMoonNearCraftFactor =
+                cameraMode === 'focus-moon'
+                    ? 0.05 + 0.95 * Math.min(1, Math.max(0, (focusMoonCraftDistance - 40) / 180))
+                    : 1;
             const orionSphereScaleFactor =
                 currentEventKind === 'orion' && (cameraMode === 'follow-orion' || isLateEarthApproach)
                     ? 0.25
                     : 1;
-            orionGroup.scale.setScalar(solarCraftScaleBoost * solarSystemOrionScaleFactor);
-            sphereCraftGroup.scale.setScalar(solarCraftScaleBoost * solarSystemOrionScaleFactor * sphereVisibilityScale * orionSphereScaleFactor);
-            const eventGroupScale = solarCraftScaleBoost * eventModelVisibilityScale;
+            orionGroup.scale.setScalar(solarCraftScaleBoost * solarSystemOrionScaleFactor * focusMoonNearCraftFactor);
+            sphereCraftGroup.scale.setScalar(solarCraftScaleBoost * solarSystemOrionScaleFactor * sphereVisibilityScale * orionSphereScaleFactor * focusMoonNearCraftFactor);
+            const eventGroupScale = solarCraftScaleBoost * eventModelVisibilityScale * focusMoonNearCraftFactor;
             eventModelGroup.scale.setScalar(eventGroupScale);
             // Keep the beacon sprite at a constant 1.5 world-units regardless of group scale
             if (eventBeaconSprite && eventGroupScale > 0) {
                 const s = 1.5 / eventGroupScale;
                 eventBeaconSprite.scale.set(s, s, 1);
             }
-            mars2033CraftGroup.scale.setScalar(activeView === 'solar-system' ? 1.65 : 1);
+            mars2033CraftGroup.scale.setScalar((activeView === 'solar-system' ? 1.65 : 1) * focusMoonNearCraftFactor);
 
             // Beacon pulse
             beacon.material.opacity = 0.7 + 0.3 * Math.sin(now * 0.006);
