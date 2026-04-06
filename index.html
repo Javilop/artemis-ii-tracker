@@ -22,7 +22,7 @@
 
         #hud {
             position: fixed; top: 0; left: 0; width: 100%;
-            pointer-events: none; z-index: 10;
+            pointer-events: none; z-index: 110;
             padding: 24px 32px;
         }
         #hud-left { display: flex; flex-direction: column; gap: 4px; }
@@ -50,7 +50,7 @@
         }
 
         #telemetry {
-            position: fixed; bottom: 28px; left: 32px; z-index: 10; pointer-events: none;
+            position: fixed; bottom: 28px; left: 32px; z-index: 110; pointer-events: none;
         }
         .telem-grid { display: grid; grid-template-columns: repeat(2, auto); gap: 10px; }
         .telem-card {
@@ -71,7 +71,7 @@
 
 
         #timeline {
-            position: fixed; bottom: 28px; right: 32px; z-index: 10;
+            position: fixed; bottom: 28px; right: 32px; z-index: 110;
             pointer-events: auto; width: 340px;
         }
         .timeline-icon-row {
@@ -226,7 +226,7 @@
             backdrop-filter: blur(28px);
             -webkit-backdrop-filter: blur(28px);
             box-shadow: 0 20px 60px rgba(0,0,0,0.45);
-            z-index: 20;
+            z-index: 120;
             pointer-events: auto;
             display: none;
         }
@@ -424,7 +424,7 @@
         .phase-label.active { color: #6ec6ff; }
 
         #controls-hint {
-            position: fixed; top: 28px; right: 32px; z-index: 10;
+            position: fixed; top: 28px; right: 32px; z-index: 110;
             pointer-events: auto; display: flex; flex-direction: column;
             gap: 5px; align-items: flex-end;
         }
@@ -530,6 +530,29 @@
             margin-top: 18px; font-size: 10px; letter-spacing: 4px;
             text-transform: uppercase; color: rgba(255,255,255,0.3);
         }
+        #btn-restart-overlay {
+            position: fixed;
+            left: 50%;
+            bottom: 33vh;
+            transform: translateX(-50%);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            min-width: 144px;
+            padding: 12px 22px;
+            border: 1px solid rgba(255,255,255,0.16);
+            border-radius: 999px;
+            background: rgba(12,14,22,0.9);
+            color: #fff;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            z-index: 115;
+            box-shadow: 0 16px 40px rgba(0,0,0,0.35);
+        }
+        #btn-restart-overlay.visible {
+            display: inline-flex;
+        }
 
         .met-counter {
             font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums;
@@ -567,17 +590,19 @@
         <div class="loading-text">Initializing Tracker</div>
     </div>
 
+    <button class="hint-btn" id="btn-restart-overlay" onclick="restartCurrentEvent()">Restart</button>
+
     <div id="canvas-container"></div>
 
     <div id="hud">
         <div id="hud-left">
-            <div class="mission-title">NASA &middot; CSA</div>
-            <div class="mission-name" id="mission-name">ARTEMIS II</div>
+            <div class="mission-title" id="mission-title-text"></div>
+            <div class="mission-name" id="mission-name"></div>
             <div class="mission-status">
                 <div class="status-dot"></div>
-                <span id="phase-text">In Transit to Moon</span>
+                <span id="phase-text"></span>
             </div>
-            <div class="met-counter" id="met-counter">T+00:00:00:00</div>
+            <div class="met-counter" id="met-counter"></div>
         </div>
     </div>
 
@@ -699,17 +724,12 @@
         <div class="data-source" id="trajectory-source">Trajectory Data: Embedded JPL Horizons Fallback</div>
     </div>
 
-    <div id="controls-hint">
+        <div id="controls-hint">
         <div class="hint-select-wrap">
-            <select class="hint-select" id="event" onchange="onEventChange(this.value)">
-                <option value="orion2026" selected>Orion 2026</option>
-                <option value="mars2033">Mars 2033</option>
-                <option value="futurama2100">Futurama 2100</option>
-                <option value="fireballs2333">Fireballs 2333 Event</option>
-            </select>
+            <select class="hint-select" id="event" onchange="onEventChange(this.value)"></select>
         </div>
-        <button class="hint-btn" id="btn-overview" onclick="focusOverview()">Mission Overview</button>
-        <button class="hint-btn" id="btn-follow" onclick="toggleFollow()">Follow Orion</button>
+        <button class="hint-btn" id="btn-overview" onclick="focusOverview()">Overview</button>
+        <button class="hint-btn" id="btn-follow" onclick="toggleFollow()">Follow</button>
         <button class="hint-btn" id="btn-earth" onclick="focusEarth()">Focus Earth</button>
         <button class="hint-btn" id="btn-moon" onclick="focusMoon()">Focus Moon</button>
         <button class="hint-btn" id="btn-solar-system" onclick="focusSolarSystem()">Solar System</button>
@@ -734,6 +754,60 @@
         </div>
     </div>
 
+    <script>
+        (() => {
+            const EVENT_BOOTSTRAP = {
+                orion2026: {
+                    kind: 'orion',
+                    label: 'Orion 2026',
+                    missionName: 'ARTEMIS II',
+                    titleText: 'NASA · CSA',
+                    browserTitle: 'Artemis II — Live Mission Tracker'
+                },
+                mars2033: {
+                    kind: 'mars',
+                    label: 'Mars 2033',
+                    missionName: 'MARS 2033',
+                    titleText: '',
+                    browserTitle: 'Mars 2033 - 1005 Day Mission'
+                },
+                futurama2100: {
+                    kind: 'custom',
+                    label: 'Futurama 2100',
+                    missionName: 'FUTURAMA 2100',
+                    titleText: '',
+                    browserTitle: 'Futurama 2100'
+                },
+                fireballs2333: {
+                    kind: 'custom',
+                    label: 'Fireballs 2333 Event',
+                    missionName: 'FIREBALLS 2333 EVENT',
+                    titleText: '',
+                    browserTitle: 'Fireballs 2333 Event'
+                }
+            };
+            const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+            const eventId = params.get('event') || 'orion2026';
+            const bootstrap = EVENT_BOOTSTRAP[eventId] || EVENT_BOOTSTRAP.orion2026;
+            const titleEl = document.getElementById('mission-title-text');
+            const nameEl = document.getElementById('mission-name');
+            const eventSelect = document.getElementById('event');
+            if (titleEl) titleEl.textContent = bootstrap.titleText;
+            if (nameEl) nameEl.textContent = bootstrap.missionName;
+            if (eventSelect) {
+                eventSelect.innerHTML = `<option value="${eventId}">${bootstrap.label}</option>`;
+                eventSelect.value = eventId;
+            }
+            if (bootstrap.browserTitle) {
+                document.title = bootstrap.browserTitle;
+            }
+            window.__initialEventBootstrap = {
+                eventId,
+                ...bootstrap
+            };
+        })();
+    </script>
+
     <script type="importmap">
     {
         "imports": {
@@ -754,8 +828,19 @@
 
         const DEFAULT_BROWSER_TITLE = 'Artemis II — Live Mission Tracker';
         const DEFAULT_EVENT_ID = 'orion2026';
-        const EVENT_OPTIONS = new Set(['orion2026', 'mars2033', 'futurama2100', 'fireballs2333']);
+        const EVENT_IDS = ['orion2026', 'mars2033', 'futurama2100', 'fireballs2333'];
+        const EVENT_OPTIONS = new Set(EVENT_IDS);
         const EVENT_SPEC_CACHE = new Map();
+        const INITIAL_EVENT_BOOTSTRAP = window.__initialEventBootstrap || {
+            eventId: DEFAULT_EVENT_ID,
+            kind: 'orion',
+            missionName: 'ARTEMIS II',
+            titleText: 'NASA · CSA',
+            browserTitle: DEFAULT_BROWSER_TITLE
+        };
+        const INITIAL_EVENT_ID = EVENT_OPTIONS.has(INITIAL_EVENT_BOOTSTRAP.eventId)
+            ? INITIAL_EVENT_BOOTSTRAP.eventId
+            : DEFAULT_EVENT_ID;
 
         // ═══════════════════════════════════════════
         // CONSTANTS
@@ -806,19 +891,19 @@
         let MARS_2033_MISSION_DAYS = MARS_2033_MISSION_DURATION_MS / MS_PER_DAY;
         let MARS_2033_INITIAL_CAMERA_POS = new THREE.Vector3(51888.875, 31961.696, 95055.78);
         let MARS_2033_INITIAL_CAMERA_TARGET = new THREE.Vector3(8178.805, -290.665, 6261.027);
-        let currentEventId = DEFAULT_EVENT_ID;
+        let currentEventId = INITIAL_EVENT_ID;
         let currentEventSpec = null;
-        let currentEventKind = 'orion';
+        let currentEventKind = INITIAL_EVENT_BOOTSTRAP.kind || 'orion';
         let currentEventVehicle = 'sphere';
-        let currentEventFollowLabel = 'Follow Orion';
-        let currentEventName = 'ARTEMIS II';
-        let currentEventBrowserTitle = DEFAULT_BROWSER_TITLE;
+        let currentEventFollowLabel = 'Follow';
+        let currentEventName = INITIAL_EVENT_BOOTSTRAP.missionName || '';
+        let currentEventBrowserTitle = INITIAL_EVENT_BOOTSTRAP.browserTitle || DEFAULT_BROWSER_TITLE;
         let currentEventInitialView = 'earth-moon';
         let currentEventInitialCameraPos = null;
         let currentEventInitialCameraTarget = null;
         let currentEventPhaseLabels = null;
         let currentEventFocusCameras = {};
-        let currentEventOverviewLabel = 'Mission Overview';
+        let currentEventOverviewLabel = 'Overview';
         let currentEventOverviewView = 'earth-moon';
         let currentEventStartMs = LAUNCH_TIME;
         let currentEventEndMs = LAUNCH_TIME + MISSION_DURATION_MS;
@@ -1245,6 +1330,29 @@
                 setTrajectorySourceLabel('Embedded JPL Horizons Fallback');
                 console.warn('NASA AROW live trajectory unavailable, using embedded fallback.', error);
             }
+        }
+
+        let liveArowLoadPromise = null;
+
+        function ensureOrionArowLoaded() {
+            if (currentEventKind !== 'orion') {
+                return Promise.resolve(false);
+            }
+            if (liveTrajectorySamples.length >= 2) {
+                setTrajectorySourceLabel('Live NASA AROW Ephemeris');
+                return Promise.resolve(true);
+            }
+            if (liveArowLoadPromise) return liveArowLoadPromise;
+            setTrajectorySourceLabel('Loading NASA AROW Ephemeris...');
+            liveArowLoadPromise = initLiveArowTrajectory()
+                .then(() => {
+                    refreshTrajectoryVisuals();
+                    return liveTrajectorySamples.length >= 2;
+                })
+                .finally(() => {
+                    liveArowLoadPromise = null;
+                });
+            return liveArowLoadPromise;
         }
 
         // ═══════════════════════════════════════════
@@ -1961,6 +2069,28 @@
             setHashParam('event', missionId);
         }
 
+        function primeEventUi(spec) {
+            const select = document.getElementById('event');
+            if (select) {
+                select.innerHTML = `<option value="${spec.id}">${spec.label}</option>`;
+                select.value = spec.id;
+            }
+            document.getElementById('mission-title-text').textContent = spec.kind === 'orion' ? 'NASA · CSA' : '';
+            document.getElementById('mission-name').textContent = spec.missionName || '';
+        }
+
+        async function hydrateEventMenu(selectedEventId = null) {
+            const select = document.getElementById('event');
+            if (!select) return;
+            const specs = await Promise.all(EVENT_IDS.map((eventId) => loadEventSpecById(eventId)));
+            select.innerHTML = specs.map((spec) =>
+                `<option value="${spec.id}">${spec.label}</option>`
+            ).join('');
+            if (selectedEventId && EVENT_OPTIONS.has(selectedEventId)) {
+                select.value = selectedEventId;
+            }
+        }
+
         function parseEventVector(value, fallback = new THREE.Vector3()) {
             if (!Array.isArray(value) || value.length < 3) return fallback.clone();
             return new THREE.Vector3(Number(value[0]) || 0, Number(value[1]) || 0, Number(value[2]) || 0);
@@ -2234,7 +2364,23 @@
             return getSyntheticMoonOffset(dateMs);
         }
 
+        function usesEmbeddedNasaMoonData(dateMs) {
+            const nasaMoonStartMs = ORION_REFERENCE_LAUNCH_TIME + TRAJ_START_DAY * MS_PER_DAY;
+            const nasaMoonEndMs = nasaMoonStartMs + (NASA_MOON.length - 1) * TRAJ_STEP_DAYS * MS_PER_DAY;
+            return dateMs >= nasaMoonStartMs && dateMs <= nasaMoonEndMs;
+        }
+
         function buildMoonOrbitPointsAroundDate(dateMs, durationDays, segments) {
+            if (!usesEmbeddedNasaMoonData(dateMs)) {
+                const pts = [];
+                const orbitDurationMs = durationDays * MS_PER_DAY;
+                for (let i = 0; i < segments; i += 1) {
+                    const sampleDateMs = dateMs + (i / segments) * orbitDurationMs;
+                    pts.push(getSyntheticMoonOffset(sampleDateMs));
+                }
+                return pts;
+            }
+
             const current = getMoonOffsetForDateMs(dateMs);
             const previous = getMoonOffsetForDateMs(dateMs - 0.35 * MS_PER_DAY);
             const next = getMoonOffsetForDateMs(dateMs + 0.35 * MS_PER_DAY);
@@ -2600,6 +2746,11 @@
             document.getElementById('btn-overview').textContent = currentEventOverviewLabel;
         }
 
+        function updateHeaderText() {
+            document.getElementById('mission-title-text').textContent = currentEventKind === 'orion' ? 'NASA · CSA' : '';
+            document.getElementById('mission-name').textContent = currentEventName || '';
+        }
+
         function updateBrowserTitle() {
             document.title =
                 activeView === 'solar-system' ? 'Solar System' :
@@ -2699,6 +2850,7 @@
             document.getElementById('event').value = spec.id;
             updateFollowButtonText();
             updateOverviewButtonText();
+            updateHeaderText();
             syncEventVehicleVisibility();
             updateBrowserTitle();
             if (updateHash) setEventHash(spec.id);
@@ -3064,6 +3216,10 @@
             return solarBaseDateMs;
         }
 
+        function isModelTimelineDriven() {
+            return simStartReal !== null || paused || scrubDay !== null || scrubSolarDateMs !== null;
+        }
+
         function clampMars2033DateMs(dateMs) {
             return Math.min(MARS_2033_RETURN_EARTH_MS, Math.max(MARS_2033_DEPART_EARTH_MS, dateMs));
         }
@@ -3076,6 +3232,10 @@
             btn.setAttribute('aria-label', isPausedState ? 'Play playback' : 'Pause playback');
             btn.classList.toggle('sim-active', isPausedState);
             btn.classList.toggle('is-playing', !isPausedState);
+        }
+
+        function setRestartButtonVisible(visible) {
+            document.getElementById('btn-restart-overlay').classList.toggle('visible', visible);
         }
 
         window.onPlanetDateChange = (value) => {
@@ -3096,31 +3256,66 @@
         window.onEventChange = async (value) => {
             const missionId = EVENT_OPTIONS.has(value) ? value : DEFAULT_EVENT_ID;
             await applyEventSpecById(missionId, { updateHash: true, focusDefaultView: true });
+            if (currentEventKind === 'orion') {
+                ensureOrionArowLoaded();
+            } else {
+                setTrajectorySourceLabel('Embedded JPL Horizons Fallback');
+            }
             if (cameraMode === 'follow-orion') {
                 const activeCraft = getGroupWorldPosition(getFollowTargetGroup());
                 snapCameraTo(activeCraft.clone().add(getFollowCameraOffset()), activeCraft);
             }
         };
 
-        function restartArtemisMission(now = Date.now()) {
-            speedMult = 1;
-            simStartReal = null;
-            simStartDay = null;
-            solarSimStartDateMs = null;
+        function restartArtemisMission(now = Date.now(), restartSpeed = speedMult) {
+            speedMult = Math.max(1, restartSpeed || 1);
+            simStartReal = now;
+            simStartDay = 0;
+            solarSimStartDateMs = getEventDateMs(0);
             paused = false;
             pausedDay = null;
             pausedSolarDateMs = null;
-            scrubDay = 0;
+            scrubDay = null;
             scrubSolarDateMs = null;
             solarBaseDateMs = getEventDateMs(0);
             lastPlanetDateInputValue = '';
-            document.getElementById('btn-reset').style.display = 'none';
             document.getElementById('sim-dropdown').classList.remove('open');
-            updateSimButton();
+            refreshSpeedControls();
             updatePlaybackButton();
             const slider = document.getElementById('timeline-slider');
             slider.value = '0';
             slider.style.background = 'linear-gradient(90deg, #ff6b35 0%, #6ec6ff 0%, rgba(255,255,255,0.08) 0%)';
+            setRestartButtonVisible(false);
+        }
+
+        window.restartCurrentEvent = () => {
+            const now = Date.now();
+            const restartSpeed = Math.max(1, speedMult || 1);
+            speedMult = restartSpeed;
+            paused = false;
+            pausedDay = null;
+            pausedSolarDateMs = null;
+            scrubDay = null;
+            scrubSolarDateMs = null;
+            zoomForwardAmount = 0;
+            document.getElementById('sim-dropdown').classList.remove('open');
+            refreshSpeedControls();
+            updatePlaybackButton();
+            if (currentEventKind === 'orion') {
+                restartArtemisMission(now, restartSpeed);
+            } else {
+                simStartReal = now;
+                simStartDay = 0;
+                solarBaseDateMs = currentEventStartMs;
+                solarSimStartDateMs = currentEventStartMs;
+                lastPlanetDateInputValue = '';
+                refreshSpeedControls();
+                updatePlaybackButton();
+                const slider = document.getElementById('timeline-slider');
+                slider.value = '0';
+                slider.style.background = 'linear-gradient(90deg, #ff6b35 0%, #6ec6ff 0%, rgba(255,255,255,0.08) 0%)';
+                setRestartButtonVisible(false);
+            }
         }
 
         window.toggleFollow = () => {
@@ -3311,6 +3506,24 @@
             return `Speed ${spd.toLocaleString()}x`;
         }
 
+        function refreshSpeedControls() {
+            const simBtn = document.getElementById('btn-sim');
+            const resetBtn = document.getElementById('btn-reset');
+            const sliderWrap = document.getElementById('sim-slider-wrap');
+            const slider = document.getElementById('sim-slider');
+            const sliderLabel = document.getElementById('sim-slider-label');
+            const accelerated = speedMult > 1;
+
+            simBtn.classList.toggle('sim-active', accelerated);
+            simBtn.textContent = accelerated ? formatSpeedLabel(speedMult) : 'Model Speed';
+            resetBtn.style.display = accelerated ? 'block' : 'none';
+            sliderWrap.classList.toggle('visible', accelerated);
+            if (accelerated) {
+                slider.value = speedToSlider(speedMult);
+            }
+            sliderLabel.textContent = formatSpeedLabel(accelerated ? speedMult : 1);
+        }
+
         window.setSpeed = (spd) => {
             if (spd <= 1) {
                 resetRealTime();
@@ -3327,13 +3540,7 @@
             pausedSolarDateMs = null;
             speedMult = spd;
             document.getElementById('sim-dropdown').classList.remove('open');
-            document.getElementById('btn-sim').classList.add('sim-active');
-            document.getElementById('btn-sim').textContent = formatSpeedLabel(spd);
-            document.getElementById('btn-reset').style.display = 'block';
-            // Show slider and sync it
-            document.getElementById('sim-slider-wrap').classList.add('visible');
-            document.getElementById('sim-slider').value = speedToSlider(spd);
-            document.getElementById('sim-slider-label').textContent = formatSpeedLabel(spd);
+            refreshSpeedControls();
             updatePlaybackButton();
         };
 
@@ -3350,10 +3557,7 @@
             pausedDay = null;
             pausedSolarDateMs = null;
             speedMult = spd;
-            document.getElementById('btn-sim').textContent = formatSpeedLabel(spd);
-            document.getElementById('sim-slider-label').textContent = formatSpeedLabel(spd);
-            document.getElementById('btn-reset').style.display = 'block';
-            document.getElementById('sim-slider-wrap').classList.add('visible');
+            refreshSpeedControls();
             updatePlaybackButton();
         };
 
@@ -3830,7 +4034,7 @@
             }
 
             // ═══ HUD UPDATE — uses simDay during simulation/scrub ═══
-            const hudDay = (scrubDay !== null || speedMult > 1) ? simDay : realDay;
+            const hudDay = isModelTimelineDriven() ? simDay : realDay;
             const hudT = hudDay / MISSION_DAYS;
             const hudElapsedMs = hudDay * MS_PER_DAY;
             const missionTimelineMs = clampMissionDateMs(solarDateMs);
@@ -3988,6 +4192,26 @@
                 ? `Day ${Math.floor(missionDay) + 1} of ${Math.max(1, Math.round((currentEventEndMs - currentEventStartMs) / MS_PER_DAY))}`
                 : `Day ${Math.floor(hudDay) + 1} of ${Math.round(MISSION_DAYS)}`;
 
+            const currentEventComplete = currentEventKind === 'orion'
+                ? hudDay >= MISSION_DAYS - 0.001
+                : missionTimelineMs >= currentEventEndMs - 1000;
+            setRestartButtonVisible(currentEventComplete);
+            if (currentEventComplete && !paused) {
+                paused = true;
+                simStartReal = null;
+                simStartDay = null;
+                scrubDay = null;
+                scrubSolarDateMs = null;
+                if (currentEventKind === 'orion') {
+                    pausedDay = MISSION_DAYS;
+                    pausedSolarDateMs = getEventDateMs(MISSION_DAYS);
+                } else {
+                    pausedDay = null;
+                    pausedSolarDateMs = currentEventEndMs;
+                }
+                updatePlaybackButton();
+            }
+
             // Render
             composer.render();
         }
@@ -4003,8 +4227,11 @@
         });
 
         async function initializeApp() {
-            const initialMissionId = getHashEventValue() || DEFAULT_EVENT_ID;
-            await applyEventSpecById(initialMissionId, { updateHash: !getHashEventValue(), focusDefaultView: false });
+            const initialEventId = getHashEventValue() || INITIAL_EVENT_ID;
+            const initialSpec = await loadEventSpecById(initialEventId);
+            primeEventUi(initialSpec);
+            hydrateEventMenu(initialEventId);
+            await applyEventSpecById(initialEventId, { updateHash: !getHashEventValue(), focusDefaultView: false });
             const now = Date.now();
             const elapsed = now - LAUNCH_TIME;
             const t = Math.max(0, Math.min(elapsed / MISSION_DURATION_MS, 1.0));
@@ -4089,12 +4316,14 @@
         }
 
         initializeApp()
-            .then(() => initLiveArowTrajectory())
             .then(() => {
-                refreshTrajectoryVisuals();
-                setTimeout(() => {
-                    document.getElementById('loading').classList.add('hidden');
-                }, 1500);
+                if (currentEventKind === 'orion') {
+                    setTrajectorySourceLabel('Loading NASA AROW Ephemeris...');
+                    ensureOrionArowLoaded();
+                } else {
+                    setTrajectorySourceLabel('Embedded JPL Horizons Fallback');
+                }
+                document.getElementById('loading').classList.add('hidden');
                 animate();
             })
             .catch((error) => {
