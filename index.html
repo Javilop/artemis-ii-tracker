@@ -978,6 +978,8 @@
         let currentEventVehicleLabel = 'ORION';
         let currentEventVideoYoutubeId = '';
         let currentEventPathColor = '#6b3fb3';
+        let currentEventPhaseText = '';
+        let currentEventDisableCompletion = false;
         let currentEventFollowLabel = 'Follow';
         let currentEventName = '';
         let currentEventBrowserTitle = DEFAULT_BROWSER_TITLE;
@@ -2251,6 +2253,8 @@
                 vehicleLabel: spec.vehicle_label || getDefaultVehicleLabel(vehicle),
                 videoYoutubeId: `${spec.video_youtube_id || spec.youtube_id || ''}`.trim(),
                 pathColor: parseEventColor(spec.path_color),
+                phaseText: `${spec.phase_text || ''}`.trim(),
+                disableCompletion: Boolean(spec.disable_completion),
                 followLabel: spec.follow_label || 'Follow Mission',
                 missionName: spec.mission_name || missionId.toUpperCase(),
                 browserTitle: spec.browser_title || DEFAULT_BROWSER_TITLE,
@@ -3041,6 +3045,8 @@
             currentEventVehicleLabel = spec.vehicleLabel;
             currentEventVideoYoutubeId = spec.videoYoutubeId || '';
             currentEventPathColor = spec.pathColor || '#6b3fb3';
+            currentEventPhaseText = spec.phaseText || '';
+            currentEventDisableCompletion = Boolean(spec.disableCompletion);
             currentEventFollowLabel = spec.followLabel;
             currentEventName = spec.missionName;
             currentEventBrowserTitle = spec.browserTitle;
@@ -4176,6 +4182,12 @@
             sphereCraftGroup.lookAt(selectedCraftLookTarget);
             planetExpressGroup.lookAt(selectedCraftLookTarget);
             hotdogCraftGroup.lookAt(selectedCraftLookTarget);
+            const solarCraftScaleBoost = activeView === 'solar-system' ? 5500 : 1;
+            orionGroup.scale.setScalar(solarCraftScaleBoost);
+            sphereCraftGroup.scale.setScalar(solarCraftScaleBoost * 1.25);
+            planetExpressGroup.scale.setScalar(solarCraftScaleBoost);
+            hotdogCraftGroup.scale.setScalar(1.45 * solarCraftScaleBoost);
+            mars2033CraftGroup.scale.setScalar(activeView === 'solar-system' ? 1.65 : 1);
 
             // Beacon pulse
             beacon.material.opacity = 0.7 + 0.3 * Math.sin(now * 0.006);
@@ -4385,16 +4397,20 @@
             }
 
             // Phase text (matches real Artemis II timeline)
-            let phase = 'Mission Complete';
+            let phase = currentEventPhaseText || 'Mission Complete';
             if (isEventTimelineView() && currentEventKind === 'mars') {
                 if (missionTimelineMs < MARS_2033_ARRIVE_MARS_MS) phase = 'Outbound Transfer';
                 else if (missionTimelineMs < MARS_2033_DEPART_MARS_MS) phase = 'Mars Surface Window';
                 else if (missionTimelineMs < MARS_2033_RETURN_EARTH_MS) phase = 'Return Transfer';
                 else phase = 'Earth Return';
             } else if (isEventTimelineView()) {
-                const labels = currentEventPhaseLabels || ['Mission In Progress'];
-                const index = Math.min(labels.length - 1, Math.max(0, Math.floor(missionProgress * labels.length)));
-                phase = labels[index] || 'Mission In Progress';
+                if (currentEventPhaseText) {
+                    phase = currentEventPhaseText;
+                } else {
+                    const labels = currentEventPhaseLabels || ['Mission In Progress'];
+                    const index = Math.min(labels.length - 1, Math.max(0, Math.floor(missionProgress * labels.length)));
+                    phase = labels[index] || 'Mission In Progress';
+                }
             } else {
                 if (hudDay < 1.06) phase = 'Earth Orbit';
                 else if (hudDay < 1.5) phase = 'Translunar Injection';
@@ -4440,7 +4456,9 @@
                 ? `Day ${Math.floor(missionDay) + 1} of ${Math.max(1, Math.round((currentEventEndMs - currentEventStartMs) / MS_PER_DAY))}`
                 : `Day ${Math.floor(hudDay) + 1} of ${Math.round(MISSION_DAYS)}`;
 
-            const currentEventComplete = currentEventKind === 'orion'
+            const currentEventComplete = currentEventDisableCompletion
+                ? false
+                : currentEventKind === 'orion'
                 ? hudDay >= MISSION_DAYS - 0.001
                 : missionTimelineMs >= currentEventEndMs - 1000;
             setRestartButtonVisible(currentEventComplete);
