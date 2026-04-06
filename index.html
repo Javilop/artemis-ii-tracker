@@ -779,10 +779,11 @@
             emissiveIntensity: 0.15
         });
 
-        // Try multiple sources for Moon texture
+        // Moon texture — 4K from Solar System Scope / LROC imagery (CC-BY 4.0)
+        // Local file first, remote fallbacks
         const moonTexUrls = [
-            'https://cdn.jsdelivr.net/npm/three-globe@2.31.1/example/img/lunar-surface.jpg',
-            'https://unpkg.com/three-globe@2.31.1/example/img/lunar-surface.jpg',
+            'moon_4k.jpg',
+            'https://svs.gsfc.nasa.gov/vis/a000000/a004700/a004720/lroc_color_2k.jpg',
             'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/moon_1024.jpg'
         ];
         (function tryMoonTex(i) {
@@ -794,7 +795,8 @@
             }, undefined, () => tryMoonTex(i + 1));
         })(0);
 
-        moonGroup.add(new THREE.Mesh(moonGeo, moonMat));
+        const moonMesh = new THREE.Mesh(moonGeo, moonMat);
+        moonGroup.add(moonMesh);
 
         // (Moon has no atmosphere — glow removed)
 
@@ -1315,6 +1317,12 @@
             // ── Update Moon ──
             const moonKm = getMoonPos(simDay);
             moonGroup.position.set(moonKm.x * SCALE, moonKm.y * SCALE, moonKm.z * SCALE);
+
+            // Tidal locking — near side (texture 0° lon) always faces Earth
+            // lookAt points Moon's -Z toward Earth (origin), then rotate Y by π
+            // so the +Z face (texture center = near side) faces Earth instead
+            moonMesh.lookAt(moonGroup.worldToLocal(new THREE.Vector3(0, 0, 0)));
+            moonMesh.rotateY(Math.PI);
 
             // ── Update Orion ──
             const orionKm = getTrajectoryPos(simDay);
