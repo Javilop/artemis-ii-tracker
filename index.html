@@ -1284,8 +1284,9 @@
         // ═══════════════════════════════════════════
         let prevOrionPos = null;
 
+        let rafId = null;
         function animate() {
-            requestAnimationFrame(animate);
+            rafId = requestAnimationFrame(animate);
             const now = Date.now();
 
             // Delta time (seconds)
@@ -1483,6 +1484,21 @@
             // Render
             composer.render();
         }
+
+        // ═══════════════════════════════════════════
+        // VISIBILITY — resume when tab returns from background
+        // ═══════════════════════════════════════════
+        // Browsers pause requestAnimationFrame when tab is hidden.
+        // When the user returns, we reset prevFrameTime so dt doesn't
+        // spike, and the next frame uses Date.now() for correct positions.
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                prevFrameTime = Date.now();
+                // Safety: cancel stale RAF and restart loop to ensure it's alive
+                cancelAnimationFrame(rafId);
+                rafId = requestAnimationFrame(animate);
+            }
+        });
 
         // ═══════════════════════════════════════════
         // INIT
