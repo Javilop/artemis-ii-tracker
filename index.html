@@ -3914,9 +3914,30 @@
         window.focusCloseUp = () => {
             setCloseUpButtonVisible(false);
             if (currentEventKind === 'orion') {
-                focusEarthMoon();
+                cameraMode = 'earth-moon';
+                activeView = 'earth-moon';
+                syncActiveButtons();
+                controls.enabled = true;
+                zoomForwardAmount = 0;
+                resetTrackedPanOffset();
+                const mid = getEarthMoonViewCenter();
+                const focusCamera = getEventFocusCamera('earthMoon', mid);
+                snapCameraTo(focusCamera.position, focusCamera.target);
+                setFocusHash('earthmoon');
             } else {
-                focusEarth();
+                if (currentEventOverviewView === 'event') {
+                    focusEventView(true, true, false);
+                } else {
+                    cameraMode = 'focus-earth';
+                    syncActiveButtons();
+                    controls.enabled = true;
+                    zoomForwardAmount = 0;
+                    resetTrackedPanOffset();
+                    const ep = earthGroup.position.clone();
+                    const focusCamera = getEventFocusCamera('earth', ep);
+                    snapCameraTo(focusCamera.position, focusCamera.target);
+                    setFocusHash('earth');
+                }
             }
         };
 
