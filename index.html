@@ -2837,6 +2837,10 @@
                 if (normal.lengthSq() < 1e-8) normal = radial.clone().cross(new THREE.Vector3(1, 0, 0));
             }
             normal.normalize();
+            if (lastMoonOrbitNormal && normal.dot(lastMoonOrbitNormal) < 0) {
+                normal.negate();
+            }
+            lastMoonOrbitNormal = normal.clone();
             const binormal = normal.clone().cross(radial).normalize();
             const radius = current.length();
             const pts = [];
@@ -2870,10 +2874,24 @@
         }
 
         function buildMoonOrbitPointsAroundOrionDay(day, segments) {
+            const maxMoonDay = TRAJ_START_DAY + (NASA_MOON.length - 1) * TRAJ_STEP_DAYS;
+            const clampedDay = Math.max(TRAJ_START_DAY, Math.min(day, maxMoonDay));
+            const prevDay = Math.max(TRAJ_START_DAY, clampedDay - 0.35);
+            const nextDay = Math.min(maxMoonDay, clampedDay + 0.35);
+            const current = getMoonOffsetForOrionDay(clampedDay);
+            let previous = getMoonOffsetForOrionDay(prevDay);
+            let next = getMoonOffsetForOrionDay(nextDay);
+
+            if (nextDay === clampedDay && prevDay < clampedDay) {
+                next = current.clone().add(current.clone().sub(previous));
+            } else if (prevDay === clampedDay && nextDay > clampedDay) {
+                previous = current.clone().sub(next.clone().sub(current));
+            }
+
             return buildMoonOrbitPointsFromSample(
-                getMoonOffsetForOrionDay(day),
-                getMoonOffsetForOrionDay(Math.max(0, day - 0.35)),
-                getMoonOffsetForOrionDay(Math.min(MISSION_DAYS, day + 0.35)),
+                current,
+                previous,
+                next,
                 segments
             );
         }
@@ -3139,6 +3157,7 @@
         let activeEventWorldPos = SOLAR_CENTER.clone();
         let activeEventWorldDir = new THREE.Vector3(0, 0, 1);
         let lastMoonOrbitRefreshMs = null;
+        let lastMoonOrbitNormal = null;
 
         function isEventView() {
             return activeView === 'event';
@@ -3349,6 +3368,8 @@
             currentEventSegments = spec.kind === 'custom' ? buildCustomEventSegments(currentEventRoute) : [];
             currentEventStartMs = spec.startMs;
             currentEventEndMs = spec.endMs;
+            lastMoonOrbitRefreshMs = null;
+            lastMoonOrbitNormal = null;
 
             if (spec.kind === 'orion') {
                 LAUNCH_TIME = spec.launchTimeMs;
@@ -4624,7 +4645,7 @@
             const solarSystemOrionScaleFactor = currentEventKind === 'orion' && activeView === 'solar-system' ? 0.25 : 1;
             const sphereVisibilityScale = activeView === 'earth-moon' ? (1.25 / 6) : 1.25;
             const orionEarthAltitudeKm = Math.max(0, orionWorld.distanceTo(earthWorld) / SCALE - EARTH_RADIUS_KM);
-            const isLateEarthApproach = currentEventKind === 'orion' && simDay >= MISSION_DAYS * 0.9 && orionEarthAltitudeKm <= 80000;
+            const isLateEarthApproach = currentEventKind === 'orion' && simDay >= MISSION_DAYS * 0.985 && orionEarthAltitudeKm <= 25000;
             const focusMoonCraftDistance = camera.position.distanceTo(selectedCraftWorld);
             const focusMoonNearCraftFactor =
                 cameraMode === 'focus-moon'
