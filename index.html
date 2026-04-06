@@ -10,10 +10,18 @@
     <script>
         (() => {
             const DEFAULT_EVENT_ID = 'orion2026';
-            const EVENT_IDS = new Set(['orion2026', 'mars2033', 'futurama2100', 'fireballs2333']);
+            const EVENT_SPEC_FILES = {
+                orion2026: 'orion2026.yaml',
+                mars2033: 'mars2033.yaml',
+                futurama2100: 'futurama2100.yaml',
+                fireballs2333: 'fireballs2333.yaml',
+                starman2018: 'starman2018.config'
+            };
+            const EVENT_IDS = new Set(Object.keys(EVENT_SPEC_FILES));
             const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
             const requestedEventId = params.get('event');
             const eventId = EVENT_IDS.has(requestedEventId) ? requestedEventId : DEFAULT_EVENT_ID;
+            const eventSpecFile = EVENT_SPEC_FILES[eventId] || EVENT_SPEC_FILES[DEFAULT_EVENT_ID];
             const parseYamlScalar = (yamlText, key) => {
                 const match = yamlText.match(new RegExp(`^${key}:\\s*(.+)$`, 'm'));
                 if (!match) return '';
@@ -28,6 +36,9 @@
                 const eventSelect = document.getElementById('event');
                 const overviewButton = document.getElementById('btn-overview');
                 const followButton = document.getElementById('btn-follow');
+                const telemetry = document.getElementById('telemetry');
+                const eventVideoWrap = document.getElementById('event-video-wrap');
+                const eventVideoFrame = document.getElementById('event-video-frame');
 
                 if (titleEl) titleEl.textContent = meta.titleText || '';
                 if (nameEl) nameEl.textContent = meta.missionName || '';
@@ -37,11 +48,26 @@
                     eventSelect.innerHTML = `<option value="${meta.eventId}">${meta.label}</option>`;
                     eventSelect.value = meta.eventId;
                 }
+                if (telemetry && eventVideoWrap && eventVideoFrame) {
+                    const youtubeId = (meta.videoYoutubeId || '').trim();
+                    const hasVideo = Boolean(youtubeId);
+                    telemetry.classList.toggle('has-video', hasVideo);
+                    if (hasVideo) {
+                        const nextSrc = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&playsinline=1&rel=0`;
+                        if (eventVideoFrame.dataset.youtubeId !== youtubeId) {
+                            eventVideoFrame.src = nextSrc;
+                            eventVideoFrame.dataset.youtubeId = youtubeId;
+                        }
+                    } else {
+                        eventVideoFrame.src = 'about:blank';
+                        eventVideoFrame.dataset.youtubeId = '';
+                    }
+                }
             };
-            window.__initialEventSpecTextPromise = fetch(`./events/${eventId}.yaml`, { cache: 'no-cache' })
+            window.__initialEventSpecTextPromise = fetch(`./events/${eventSpecFile}`, { cache: 'no-cache' })
                 .then((response) => {
                     if (!response.ok) {
-                        throw new Error(`Unable to load event spec: events/${eventId}.yaml`);
+                        throw new Error(`Unable to load event spec: events/${eventSpecFile}`);
                     }
                     return response.text();
                 });
@@ -53,11 +79,12 @@
                     const kind = parseYamlScalar(yamlText, 'kind');
                     const overviewLabel = parseYamlScalar(yamlText, 'overview_label') || 'Overview';
                     const followLabel = parseYamlScalar(yamlText, 'follow_label') || 'Follow';
+                    const videoYoutubeId = parseYamlScalar(yamlText, 'video_youtube_id') || parseYamlScalar(yamlText, 'youtube_id');
                     const titleText = kind === 'orion' ? 'NASA · CSA' : '';
                     if (browserTitle) {
                         document.title = browserTitle;
                     }
-                    const meta = { eventId, label, missionName, browserTitle, kind, overviewLabel, followLabel, titleText };
+                    const meta = { eventId, label, missionName, browserTitle, kind, overviewLabel, followLabel, videoYoutubeId, titleText };
                     window.__applyInitialEventMeta(meta);
                     return meta;
                 })
@@ -112,7 +139,14 @@
         #telemetry {
             position: fixed; bottom: 28px; left: 32px; z-index: 110; pointer-events: none;
         }
+        #telemetry.has-video {
+            width: 340px;
+            pointer-events: auto;
+        }
         .telem-grid { display: grid; grid-template-columns: repeat(2, auto); gap: 10px; }
+        #telemetry.has-video .telem-grid {
+            margin-top: 10px;
+        }
         .telem-card {
             background: rgba(10,12,20,0.7); border: 1px solid rgba(255,255,255,0.07);
             border-radius: 14px; padding: 14px 18px; min-width: 145px;
@@ -123,10 +157,31 @@
             text-transform: uppercase; color: rgba(255,255,255,0.3); margin-bottom: 6px;
         }
         .telem-value {
-            font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; color: #fff;
+            font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: #fff;
         }
         .telem-unit {
             font-size: 10px; font-weight: 500; color: rgba(255,255,255,0.35); margin-left: 3px;
+        }
+        .event-video-wrap {
+            display: none;
+            width: 340px;
+            background: rgba(10,12,20,0.7);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 14px;
+            overflow: hidden;
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            box-shadow: 0 18px 45px rgba(0,0,0,0.28);
+        }
+        #telemetry.has-video .event-video-wrap {
+            display: block;
+        }
+        .event-video-frame {
+            display: block;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            border: 0;
+            background: #000;
         }
 
 
@@ -688,7 +743,23 @@
                 <div><span class="telem-value" id="mission-day">—</span></div>
             </div>
         </div>
+        <div class="event-video-wrap" id="event-video-wrap">
+            <iframe
+                id="event-video-frame"
+                class="event-video-frame"
+                src="about:blank"
+                title="Event video"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerpolicy="strict-origin-when-cross-origin"
+                allowfullscreen></iframe>
+        </div>
     </div>
+
+    <script>
+        if (window.__initialEventMetaPromise && window.__applyInitialEventMeta) {
+            window.__initialEventMetaPromise.then(window.__applyInitialEventMeta);
+        }
+    </script>
 
     <div id="timeline">
         <div class="timeline-icon-row">
@@ -816,12 +887,6 @@
         </div>
     </div>
 
-    <script>
-        if (window.__initialEventMetaPromise && window.__applyInitialEventMeta) {
-            window.__initialEventMetaPromise.then(window.__applyInitialEventMeta);
-        }
-    </script>
-
     <script type="importmap">
     {
         "imports": {
@@ -842,7 +907,14 @@
 
         const DEFAULT_BROWSER_TITLE = 'Artemis II — Live Mission Tracker';
         const DEFAULT_EVENT_ID = 'orion2026';
-        const EVENT_IDS = ['orion2026', 'mars2033', 'futurama2100', 'fireballs2333'];
+        const EVENT_SPEC_FILES = {
+            orion2026: 'orion2026.yaml',
+            mars2033: 'mars2033.yaml',
+            futurama2100: 'futurama2100.yaml',
+            fireballs2333: 'fireballs2333.yaml',
+            starman2018: 'starman2018.config'
+        };
+        const EVENT_IDS = ['orion2026', 'mars2033', 'futurama2100', 'fireballs2333', 'starman2018'];
         const EVENT_OPTIONS = new Set(EVENT_IDS);
         const EVENT_SPEC_CACHE = new Map();
         const INITIAL_EVENT_ID = EVENT_OPTIONS.has(window.__initialEventId)
@@ -903,6 +975,9 @@
         let currentEventSpec = null;
         let currentEventKind = 'orion';
         let currentEventVehicle = 'sphere';
+        let currentEventVehicleLabel = 'ORION';
+        let currentEventVideoYoutubeId = '';
+        let currentEventPathColor = '#6b3fb3';
         let currentEventFollowLabel = 'Follow';
         let currentEventName = '';
         let currentEventBrowserTitle = DEFAULT_BROWSER_TITLE;
@@ -917,6 +992,7 @@
         let currentEventEndMs = LAUNCH_TIME + MISSION_DURATION_MS;
         let currentEventRoute = [];
         let currentEventSegments = [];
+        let currentEventOrbit = null;
         let ORION_REFERENCE_LAUNCH_TIME = LAUNCH_TIME;
         const solarSystemData = [
             {
@@ -2007,7 +2083,26 @@
                 map: tex, transparent: true, opacity: 0.75, depthWrite: false
             }));
             sp.scale.set(6, 0.75, 1);
+            sp.userData.labelColor = color;
             return sp;
+        }
+
+        function setLabelText(label, text, color = label?.userData?.labelColor || '#ffffff') {
+            if (!label?.material) return;
+            const c = document.createElement('canvas');
+            const ctx = c.getContext('2d');
+            c.width = 512; c.height = 64;
+            ctx.font = '600 26px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = color;
+            ctx.fillText(text, 256, 42);
+            const tex = new THREE.CanvasTexture(c);
+            if (label.material.map) {
+                label.material.map.dispose();
+            }
+            label.material.map = tex;
+            label.material.needsUpdate = true;
+            label.userData.labelColor = color;
         }
 
         function formatKm(n) {
@@ -2035,6 +2130,15 @@
             if (!value) return DEFAULT_SOLAR_DATE_MS;
             const [year, month, day] = value.split('-').map(Number);
             return Date.UTC(year, month - 1, day, 12, 0, 0);
+        }
+
+        function parseEventDateMs(value, fallback = null) {
+            if (!value) return fallback;
+            if (typeof value === 'string' && value.trim().toLowerCase() === 'now') {
+                return Date.now();
+            }
+            const parsed = Date.parse(value);
+            return Number.isFinite(parsed) ? parsed : fallback;
         }
 
         function getHashParams() {
@@ -2117,13 +2221,36 @@
             };
         }
 
+        function parseEventColor(value, fallback = '#6b3fb3') {
+            if (typeof value !== 'string') return fallback;
+            const trimmed = value.trim();
+            return trimmed ? trimmed : fallback;
+        }
+
+        function getDefaultVehicleLabel(vehicle) {
+            switch (vehicle) {
+                case 'futurama':
+                    return 'Planet Express';
+                case 'mars':
+                    return 'MARS 2033';
+                case 'sphere':
+                case 'orion':
+                default:
+                    return 'ORION';
+            }
+        }
+
         function normalizeEventSpec(rawSpec, missionId) {
             const spec = rawSpec && typeof rawSpec === 'object' ? rawSpec : {};
+            const vehicle = spec.vehicle || 'sphere';
             const normalized = {
                 id: missionId,
                 label: spec.label || missionId,
                 kind: spec.kind || 'custom',
-                vehicle: spec.vehicle || 'sphere',
+                vehicle,
+                vehicleLabel: spec.vehicle_label || getDefaultVehicleLabel(vehicle),
+                videoYoutubeId: `${spec.video_youtube_id || spec.youtube_id || ''}`.trim(),
+                pathColor: parseEventColor(spec.path_color),
                 followLabel: spec.follow_label || 'Follow Mission',
                 missionName: spec.mission_name || missionId.toUpperCase(),
                 browserTitle: spec.browser_title || DEFAULT_BROWSER_TITLE,
@@ -2138,7 +2265,16 @@
                     moon: parseFocusCameraConfig(spec.focus_cameras?.moon),
                     earthMoon: parseFocusCameraConfig(spec.focus_cameras?.earth_moon)
                 },
-                solarStartDateMs: spec.solar_start_date ? Date.parse(spec.solar_start_date) : null,
+                solarStartDateMs: parseEventDateMs(spec.solar_start_date, null),
+                orbit: spec.orbit ? {
+                    semiMajorAxisAu: Number(spec.orbit.semi_major_axis_au) || 0,
+                    eccentricity: Number(spec.orbit.eccentricity) || 0,
+                    inclinationDeg: Number(spec.orbit.inclination_deg) || 0,
+                    ascendingNodeDeg: Number(spec.orbit.ascending_node_deg) || 0,
+                    argPeriapsisDeg: Number(spec.orbit.arg_periapsis_deg) || 0,
+                    timePeriapsisJd: Number(spec.orbit.time_periapsis_jd) || 0,
+                    periodDays: Number(spec.orbit.period_days) || 0
+                } : null,
                 route: Array.isArray(spec.route) ? spec.route.map((waypoint) => ({
                     dateMs: Date.parse(waypoint.date),
                     body: `${waypoint.body || 'Earth'}`,
@@ -2158,9 +2294,12 @@
                 normalized.returnEarthMs = Date.parse(spec.return_earth);
                 normalized.startMs = normalized.departEarthMs;
                 normalized.endMs = normalized.returnEarthMs;
+            } else if (normalized.kind === 'orbit') {
+                normalized.startMs = parseEventDateMs(spec.start_date, DEFAULT_SOLAR_DATE_MS);
+                normalized.endMs = parseEventDateMs(spec.end_date, normalized.startMs + MS_PER_DAY);
             } else {
-                normalized.startMs = spec.start_date ? Date.parse(spec.start_date) : (normalized.route[0]?.dateMs ?? DEFAULT_SOLAR_DATE_MS);
-                normalized.endMs = spec.end_date ? Date.parse(spec.end_date) : (normalized.route[normalized.route.length - 1]?.dateMs ?? normalized.startMs);
+                normalized.startMs = parseEventDateMs(spec.start_date, normalized.route[0]?.dateMs ?? DEFAULT_SOLAR_DATE_MS);
+                normalized.endMs = parseEventDateMs(spec.end_date, normalized.route[normalized.route.length - 1]?.dateMs ?? normalized.startMs);
             }
 
             return normalized;
@@ -2169,12 +2308,13 @@
         async function loadEventSpecById(missionId) {
             const safeMissionId = EVENT_OPTIONS.has(missionId) ? missionId : DEFAULT_EVENT_ID;
             if (EVENT_SPEC_CACHE.has(safeMissionId)) return EVENT_SPEC_CACHE.get(safeMissionId);
+            const specFile = EVENT_SPEC_FILES[safeMissionId] || EVENT_SPEC_FILES[DEFAULT_EVENT_ID];
             const yamlText = safeMissionId === INITIAL_EVENT_ID && INITIAL_EVENT_SPEC_TEXT_PROMISE
                 ? await INITIAL_EVENT_SPEC_TEXT_PROMISE
                 : await (async () => {
-                    const response = await fetch(`./events/${safeMissionId}.yaml`, { cache: 'no-cache' });
+                    const response = await fetch(`./events/${specFile}`, { cache: 'no-cache' });
                     if (!response.ok) {
-                        throw new Error(`Unable to load mission spec: events/${safeMissionId}.yaml`);
+                        throw new Error(`Unable to load mission spec: events/${specFile}`);
                     }
                     return response.text();
                 })();
@@ -2264,6 +2404,44 @@
                 const xPrime = a * (Math.cos(E) - e);
                 const yPrime = a * Math.sqrt(1 - e * e) * Math.sin(E);
                 pts.push(orbitalPointToScene(xPrime, yPrime, I, omega, longNode));
+            }
+            return pts;
+        }
+
+        function getOrbitEventMeanAnomalyDeg(orbit, dateMs) {
+            const daysSincePeriapsis = toJulianDate(dateMs) - orbit.timePeriapsisJd;
+            return normalizeDegrees((daysSincePeriapsis / Math.max(1e-6, orbit.periodDays)) * 360);
+        }
+
+        function getOrbitEventLocalPos(orbit, dateMs) {
+            const meanAnomalyDeg = getOrbitEventMeanAnomalyDeg(orbit, dateMs);
+            const E = solveKeplerDegrees(meanAnomalyDeg, orbit.eccentricity) * Math.PI / 180;
+            const xPrime = orbit.semiMajorAxisAu * (Math.cos(E) - orbit.eccentricity);
+            const yPrime = orbit.semiMajorAxisAu * Math.sqrt(1 - orbit.eccentricity * orbit.eccentricity) * Math.sin(E);
+            return orbitalPointToScene(
+                xPrime,
+                yPrime,
+                orbit.inclinationDeg,
+                orbit.argPeriapsisDeg,
+                orbit.ascendingNodeDeg
+            );
+        }
+
+        function buildOrbitEventPoints(orbit, startDateMs, segments = 720) {
+            const startMeanAnomalyDeg = getOrbitEventMeanAnomalyDeg(orbit, startDateMs);
+            const pts = [];
+            for (let i = 0; i < segments; i += 1) {
+                const meanAnomalyDeg = normalizeDegrees(startMeanAnomalyDeg + (i / segments) * 360);
+                const E = solveKeplerDegrees(meanAnomalyDeg, orbit.eccentricity) * Math.PI / 180;
+                const xPrime = orbit.semiMajorAxisAu * (Math.cos(E) - orbit.eccentricity);
+                const yPrime = orbit.semiMajorAxisAu * Math.sqrt(1 - orbit.eccentricity * orbit.eccentricity) * Math.sin(E);
+                pts.push(orbitalPointToScene(
+                    xPrime,
+                    yPrime,
+                    orbit.inclinationDeg,
+                    orbit.argPeriapsisDeg,
+                    orbit.ascendingNodeDeg
+                ));
             }
             return pts;
         }
@@ -2781,6 +2959,28 @@
             document.getElementById('btn-overview').textContent = currentEventOverviewLabel;
         }
 
+        function updateVehicleLabels() {
+            setLabelText(sphereLabel, currentEventVehicleLabel, '#ffb088');
+        }
+
+        function updateEventVideoPanel() {
+            const telemetry = document.getElementById('telemetry');
+            const frame = document.getElementById('event-video-frame');
+            const youtubeId = (currentEventVideoYoutubeId || '').trim();
+            const hasVideo = Boolean(youtubeId);
+            telemetry.classList.toggle('has-video', hasVideo);
+            if (hasVideo) {
+                const nextSrc = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&playsinline=1&rel=0`;
+                if (frame.dataset.youtubeId !== youtubeId) {
+                    frame.src = nextSrc;
+                    frame.dataset.youtubeId = youtubeId;
+                }
+            } else {
+                frame.src = 'about:blank';
+                frame.dataset.youtubeId = '';
+            }
+        }
+
         function updateHeaderText() {
             document.getElementById('mission-title-text').textContent = currentEventKind === 'orion' ? 'NASA · CSA' : '';
             document.getElementById('mission-name').textContent = currentEventName || '';
@@ -2838,6 +3038,9 @@
             currentEventId = spec.id;
             currentEventKind = spec.kind;
             currentEventVehicle = spec.vehicle;
+            currentEventVehicleLabel = spec.vehicleLabel;
+            currentEventVideoYoutubeId = spec.videoYoutubeId || '';
+            currentEventPathColor = spec.pathColor || '#6b3fb3';
             currentEventFollowLabel = spec.followLabel;
             currentEventName = spec.missionName;
             currentEventBrowserTitle = spec.browserTitle;
@@ -2848,6 +3051,7 @@
             currentEventInitialCameraTarget = spec.initialCameraTarget.clone();
             currentEventPhaseLabels = spec.phaseLabels;
             currentEventFocusCameras = spec.focusCameras || {};
+            currentEventOrbit = spec.orbit || null;
             currentEventRoute = spec.route || [];
             currentEventSegments = spec.kind === 'custom' ? buildCustomEventSegments(currentEventRoute) : [];
             currentEventStartMs = spec.startMs;
@@ -2875,9 +3079,7 @@
                 MARS_2033_INITIAL_CAMERA_TARGET = spec.initialCameraTarget.clone();
             }
 
-            solarBaseDateMs = spec.kind === 'orion'
-                ? (spec.solarStartDateMs || spec.startMs)
-                : spec.startMs;
+            solarBaseDateMs = spec.solarStartDateMs || spec.startMs;
             solarSimStartDateMs = null;
             pausedSolarDateMs = null;
             scrubSolarDateMs = null;
@@ -2886,6 +3088,10 @@
             updateFollowButtonText();
             updateOverviewButtonText();
             updateHeaderText();
+            updateVehicleLabels();
+            updateEventVideoPanel();
+            mars2033TransferLine.material.color.set(currentEventPathColor);
+            mars2033TransferGlow.material.color.set(currentEventPathColor);
             syncEventVehicleVisibility();
             updateBrowserTitle();
             if (updateHash) setEventHash(spec.id);
@@ -3885,6 +4091,12 @@
                 }
                 missionCraftWorld = getMars2033VehicleLocalPos(solarDateMs, outbound, stay, missionReturn).add(SOLAR_CENTER);
                 mars2033CraftGroup.position.copy(missionCraftWorld.clone().sub(SOLAR_CENTER));
+            } else if (currentEventKind === 'orbit' && currentEventOrbit) {
+                missionRoutePointsLocal = buildOrbitEventPoints(currentEventOrbit, currentEventStartMs, 720);
+                missionRoutePointsWorld = missionRoutePointsLocal.map((point) => point.clone().add(SOLAR_CENTER));
+                const elapsedFraction = Math.max(0, (solarDateMs - currentEventStartMs) / MS_PER_DAY / Math.max(1e-6, currentEventOrbit.periodDays));
+                missionProgressT = ((elapsedFraction % 1) + 1) % 1;
+                missionCraftWorld = getOrbitEventLocalPos(currentEventOrbit, solarDateMs).add(SOLAR_CENTER);
             } else if (currentEventKind === 'custom') {
                 missionRoutePointsWorld = flattenEventSegments(currentEventSegments);
                 missionRoutePointsLocal = missionRoutePointsWorld.map((point) => point.clone().sub(SOLAR_CENTER));
@@ -4275,7 +4487,7 @@
             document.getElementById('planet-date-input').value = msToDateInputValue(solarBaseDateMs);
             lastPlanetDateInputValue = msToDateInputValue(solarBaseDateMs);
 
-            const initialMissionDateMs = currentEventKind === 'orion' ? getEventDateMs(day) : currentEventStartMs;
+            const initialMissionDateMs = currentEventKind === 'orion' ? getEventDateMs(day) : solarBaseDateMs;
             for (const name in solarPlanets) {
                 const planet = solarPlanets[name];
                 planet.group.position.copy(getPlanetLocalPos(planet.data, initialMissionDateMs));
@@ -4311,7 +4523,7 @@
                     ? orionWorld
                     : currentEventKind === 'mars'
                     ? getMars2033VehicleLocalPos(
-                        currentEventStartMs,
+                        initialMissionDateMs,
                         buildTransferSegment(
                             getPlanetLocalPos(solarPlanets.Earth.data, MARS_2033_DEPART_EARTH_MS),
                             getPlanetLocalPos(solarPlanets.Mars.data, MARS_2033_ARRIVE_MARS_MS),
@@ -4326,7 +4538,9 @@
                             950
                         ).slice(1)
                     ).add(SOLAR_CENTER)
-                    : getCustomEventWorldPos(currentEventStartMs, currentEventSegments)
+                    : currentEventKind === 'orbit' && currentEventOrbit
+                    ? getOrbitEventLocalPos(currentEventOrbit, initialMissionDateMs).add(SOLAR_CENTER)
+                    : getCustomEventWorldPos(initialMissionDateMs, currentEventSegments)
             );
             orionGroup.position.copy(activeEventWorldPos);
             sphereCraftGroup.position.copy(activeEventWorldPos);
