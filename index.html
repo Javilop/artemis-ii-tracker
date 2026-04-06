@@ -190,19 +190,18 @@
             pointer-events: auto; width: 340px;
         }
         .timeline-icon-row {
-            position: absolute;
-            top: -46px;
-            right: 14px;
             display: flex;
+            justify-content: flex-end;
             gap: 8px;
-            z-index: 2;
+            width: 100%;
+            margin-top: 8px;
         }
         #btn-observer-angle,
         #btn-zoom-in,
         #btn-zoom-out,
         #btn-play-pause {
-            width: 36px;
-            height: 36px;
+            width: 28px;
+            height: 28px;
             min-width: 0;
             padding: 0;
             display: inline-flex;
@@ -212,12 +211,12 @@
             position: static;
         }
         #btn-observer-angle .hint-btn-icon {
-            width: 17px;
-            height: 17px;
+            width: 18px;
+            height: 18px;
         }
         .timeline-zoom-icon {
-            width: 15px;
-            height: 15px;
+            width: 13px;
+            height: 13px;
         }
         .timeline-zoom-icon {
             position: relative;
@@ -234,20 +233,20 @@
             transform: translate(-50%, -50%);
         }
         .timeline-zoom-icon::before {
-            width: 13px;
+            width: 11px;
             height: 1.8px;
         }
         .timeline-zoom-icon.plus::after {
             width: 1.8px;
-            height: 13px;
+            height: 11px;
         }
         .timeline-playback-icon {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 16px;
-            height: 16px;
-            font-size: 15px;
+            width: 14px;
+            height: 14px;
+            font-size: 13px;
             line-height: 1;
             color: rgba(255,255,255,0.82);
         }
@@ -613,12 +612,12 @@
         .sim-opt:hover { background: rgba(255,107,53,0.15); color: #ff8855; }
         .sim-slider-wrap {
             display: flex; align-items: center; gap: 0; margin-top: 4px;
-            pointer-events: auto;
+            pointer-events: auto; width: 100%;
         }
         .sim-slider-wrap.visible { display: flex; }
         .sim-slider-wrap input[type="range"] {
             -webkit-appearance: none; appearance: none;
-            width: 120px; height: 3px; background: rgba(255,255,255,0.15);
+            width: 100%; height: 3px; background: rgba(255,255,255,0.15);
             border-radius: 2px; outline: none; cursor: pointer;
         }
         .sim-slider-wrap input[type="range"]::-webkit-slider-thumb {
@@ -762,25 +761,6 @@
     </script>
 
     <div id="timeline">
-        <div class="timeline-icon-row">
-            <button class="hint-btn icon-btn" id="btn-observer-angle" onclick="openObserverSpecs()" aria-label="Open observer specs">
-                <span class="hint-btn-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M4 8h3l1.7-2h6.6L17 8h3a2 2 0 0 1 2 2v7a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3v-7a2 2 0 0 1 2-2Z"></path>
-                        <circle cx="12" cy="13" r="4"></circle>
-                    </svg>
-                </span>
-            </button>
-            <button class="hint-btn icon-btn" id="btn-zoom-in" onclick="zoomIn()" aria-label="Zoom in">
-                <span class="timeline-zoom-icon plus" aria-hidden="true"></span>
-            </button>
-            <button class="hint-btn icon-btn" id="btn-zoom-out" onclick="zoomOut()" aria-label="Zoom out">
-                <span class="timeline-zoom-icon minus" aria-hidden="true"></span>
-            </button>
-            <button class="hint-btn icon-btn" id="btn-play-pause" onclick="togglePlayback()" aria-label="Pause playback">
-                <span class="timeline-playback-icon" aria-hidden="true">&#10074;&#10074;</span>
-            </button>
-        </div>
         <div class="timeline-bar">
             <div class="timeline-header">
                 <div class="timeline-title" id="timeline-title-text">Mission Time</div>
@@ -879,11 +859,30 @@
                 <button class="sim-opt" onclick="setSpeed(10000000)">Speed 10,000,000x</button>
             </div>
         </div>
-        <button class="hint-btn" id="btn-reset" onclick="resetRealTime()" style="display:none">Reset to Real Time</button>
         <div class="sim-slider-wrap" id="sim-slider-wrap">
             <input type="range" id="sim-slider" min="0" max="100" value="0"
                    oninput="onSliderChange(this.value)">
         </div>
+        <div class="timeline-icon-row">
+            <button class="hint-btn icon-btn" id="btn-observer-angle" onclick="openObserverSpecs()" aria-label="Open observer specs">
+                <span class="hint-btn-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 8h3l1.7-2h6.6L17 8h3a2 2 0 0 1 2 2v7a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3v-7a2 2 0 0 1 2-2Z"></path>
+                        <circle cx="12" cy="13" r="4"></circle>
+                    </svg>
+                </span>
+            </button>
+            <button class="hint-btn icon-btn" id="btn-zoom-in" onclick="zoomIn()" aria-label="Zoom in">
+                <span class="timeline-zoom-icon plus" aria-hidden="true"></span>
+            </button>
+            <button class="hint-btn icon-btn" id="btn-zoom-out" onclick="zoomOut()" aria-label="Zoom out">
+                <span class="timeline-zoom-icon minus" aria-hidden="true"></span>
+            </button>
+            <button class="hint-btn icon-btn" id="btn-play-pause" onclick="togglePlayback()" aria-label="Pause playback">
+                <span class="timeline-playback-icon" aria-hidden="true">&#10074;&#10074;</span>
+            </button>
+        </div>
+        <button class="hint-btn" id="btn-reset" onclick="resetRealTime()" style="display:none">Reset to Real Speed</button>
     </div>
 
     <script type="importmap">
@@ -981,11 +980,13 @@
         let currentEventDisableCompletion = false;
         let currentEventObject = null;
         let currentEventFollowLabel = 'Follow';
+        let currentEventFollowHash = 'orion';
         let currentEventName = '';
         let currentEventBrowserTitle = DEFAULT_BROWSER_TITLE;
         let currentEventInitialView = 'earth-moon';
         let currentEventInitialCameraPos = null;
         let currentEventInitialCameraTarget = null;
+        let currentEventPreserveStartupCamera = false;
         let currentEventPhaseLabels = null;
         let currentEventFocusCameras = {};
         let currentEventOverviewLabel = 'Overview';
@@ -1883,6 +1884,28 @@
         const eventModelLabel = createLabel('OBJECT', '#ff6b35');
         eventModelLabel.position.set(0, 0.6, 0);
         eventModelGroup.add(eventModelLabel);
+
+        // Beacon sprite — ensures visibility regardless of GLB model scale
+        let eventBeaconSprite;
+        (() => {
+            const c = document.createElement('canvas');
+            c.width = 128; c.height = 128;
+            const ctx = c.getContext('2d');
+            const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+            grad.addColorStop(0, 'rgba(255,136,68,0.9)');
+            grad.addColorStop(0.15, 'rgba(255,107,53,0.5)');
+            grad.addColorStop(0.4, 'rgba(255,80,30,0.12)');
+            grad.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 128, 128);
+            const tex = new THREE.CanvasTexture(c);
+            eventBeaconSprite = new THREE.Sprite(new THREE.SpriteMaterial({
+                map: tex, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false
+            }));
+            eventBeaconSprite.scale.set(1.5, 1.5, 1);
+            eventModelGroup.add(eventBeaconSprite);
+        })();
+
         eventModelGroup.visible = false;
         scene.add(eventModelGroup);
 
@@ -2051,6 +2074,11 @@
             return Number.isFinite(parsed) ? parsed : fallback;
         }
 
+        function sanitizeHashSlug(value, fallback = '') {
+            const slug = `${value ?? ''}`.trim().toLowerCase().replace(/\s+/g, '');
+            return slug || fallback;
+        }
+
         function getHashParams() {
             return new URLSearchParams(window.location.hash.replace(/^#/, ''));
         }
@@ -2071,6 +2099,10 @@
             return getHashParam('focus');
         }
 
+        function getHashFollowValue() {
+            return getHashParam('follow');
+        }
+
         function getHashEventValue() {
             const mission = getHashParam('event');
             return EVENT_OPTIONS.has(mission) ? mission : null;
@@ -2088,11 +2120,23 @@
         }
 
         function setFocusHash(focus) {
-            setHashParam('focus', focus);
+            updateHashParams((params) => {
+                params.delete('follow');
+                if (focus === null || focus === undefined || focus === '') params.delete('focus');
+                else params.set('focus', focus);
+            });
         }
 
         function setEventHash(missionId) {
             setHashParam('event', missionId);
+        }
+
+        function setFollowHash(follow) {
+            updateHashParams((params) => {
+                params.delete('focus');
+                if (follow === null || follow === undefined || follow === '') params.delete('follow');
+                else params.set('follow', follow);
+            });
         }
 
         function primeEventUi(spec) {
@@ -2154,6 +2198,7 @@
             if (!rawObject) return null;
             if (typeof rawObject === 'string') {
                 return {
+                    name: '',
                     path: rawObject,
                     scale: 0.5,
                     rotationY: Math.PI
@@ -2163,6 +2208,7 @@
             const path = `${rawObject.path || rawObject.src || ''}`.trim();
             if (!path) return null;
             return {
+                name: sanitizeHashSlug(rawObject.name || rawObject.id || ''),
                 path,
                 scale: Number(rawObject.scale) || 0.5,
                 rotationY: Number.isFinite(Number(rawObject.rotation_y)) ? Number(rawObject.rotation_y) : Math.PI
@@ -2172,6 +2218,11 @@
         function normalizeEventSpec(rawSpec, missionId) {
             const spec = rawSpec && typeof rawSpec === 'object' ? rawSpec : {};
             const vehicle = spec.vehicle || 'sphere';
+            const phaseLabels = Array.isArray(spec.phase_labels) ? spec.phase_labels.map(label => `${label ?? ''}`) : null;
+            const followHash = sanitizeHashSlug(
+                spec.object_name || spec.follow_hash || spec.object?.name || phaseLabels?.find(label => `${label}`.trim()) || missionId,
+                missionId
+            );
             const normalized = {
                 id: missionId,
                 label: spec.label || missionId,
@@ -2184,6 +2235,7 @@
                 disableCompletion: Boolean(spec.disable_completion),
                 object: normalizeEventObject(spec.object),
                 followLabel: spec.follow_label || 'Follow Mission',
+                followHash,
                 missionName: spec.mission_name || missionId.toUpperCase(),
                 browserTitle: spec.browser_title || DEFAULT_BROWSER_TITLE,
                 initialView: spec.initial_view || 'earth-moon',
@@ -2191,7 +2243,8 @@
                 overviewView: spec.overview_view || spec.initial_view || 'earth-moon',
                 initialCameraPos: parseEventVector(spec.initial_camera?.position),
                 initialCameraTarget: parseEventVector(spec.initial_camera?.target),
-                phaseLabels: Array.isArray(spec.phase_labels) ? spec.phase_labels.map(label => `${label ?? ''}`) : null,
+                preserveStartupCamera: Boolean(spec.preserve_startup_camera),
+                phaseLabels,
                 focusCameras: {
                     earth: parseFocusCameraConfig(spec.focus_cameras?.earth),
                     moon: parseFocusCameraConfig(spec.focus_cameras?.moon),
@@ -2851,6 +2904,17 @@
                 : new THREE.Vector3(4.5, 4.5, 10);
         }
 
+        function getCurrentEventFollowHashValues() {
+            const values = new Set();
+            const primary = sanitizeHashSlug(currentEventFollowHash);
+            if (primary) values.add(primary);
+            (currentEventPhaseLabels || []).forEach((label) => {
+                const slug = sanitizeHashSlug(label);
+                if (slug) values.add(slug);
+            });
+            return values;
+        }
+
         function getSolarSystemFocusCamera() {
             const currentTarget = controls.target.clone();
             const currentOffset = camera.position.clone().sub(currentTarget);
@@ -2977,6 +3041,7 @@
             currentEventDisableCompletion = Boolean(spec.disableCompletion);
             currentEventObject = spec.object || null;
             currentEventFollowLabel = spec.followLabel;
+            currentEventFollowHash = spec.followHash || 'orion';
             currentEventName = spec.missionName;
             currentEventBrowserTitle = spec.browserTitle;
             currentEventInitialView = spec.initialView;
@@ -2984,6 +3049,7 @@
             currentEventOverviewView = spec.overviewView;
             currentEventInitialCameraPos = spec.initialCameraPos.clone();
             currentEventInitialCameraTarget = spec.initialCameraTarget.clone();
+            currentEventPreserveStartupCamera = Boolean(spec.preserveStartupCamera);
             currentEventPhaseLabels = spec.phaseLabels;
             currentEventFocusCameras = spec.focusCameras || {};
             currentEventOrbit = spec.orbit || null;
@@ -3049,10 +3115,17 @@
                 targetPos = followPos;
                 targetLook = followLook;
             }
-            if (updateHash) setFocusHash('orion');
+            if (updateHash) setFollowHash(currentEventFollowHash);
         }
 
         function applyFocusHash() {
+            const hashFollow = sanitizeHashSlug(getHashFollowValue());
+            if (hashFollow) {
+                if (getCurrentEventFollowHashValues().has(hashFollow) && (cameraMode !== 'follow-orion' || hashFollow !== sanitizeHashSlug(currentEventFollowHash))) {
+                    focusOrion(false, true);
+                    return;
+                }
+            }
             switch (getHashFocusValue()) {
                 case 'orion':
                     if (cameraMode !== 'follow-orion') focusOrion(false, true);
@@ -3566,14 +3639,20 @@
             if (updateHash) setFocusHash('solarsystem');
         };
 
-        function focusEventView(updateHash = false) {
+        function focusEventView(updateHash = false, immediate = false, preserveCurrentCamera = false) {
             cameraMode = 'event';
             activeView = 'event';
             syncActiveButtons();
             controls.enabled = true;
             zoomForwardAmount = 0;
-            targetPos = currentEventInitialCameraPos.clone();
-            targetLook = currentEventInitialCameraTarget.clone();
+            const nextPos = preserveCurrentCamera ? camera.position.clone() : currentEventInitialCameraPos.clone();
+            const nextLook = preserveCurrentCamera ? controls.target.clone() : currentEventInitialCameraTarget.clone();
+            if (immediate) {
+                snapCameraTo(nextPos, nextLook);
+            } else {
+                targetPos = nextPos;
+                targetLook = nextLook;
+            }
             solarBaseDateMs = currentEventStartMs;
             scrubSolarDateMs = null;
             scrubbing = false;
@@ -3596,7 +3675,7 @@
             if (hashMission !== currentEventId) {
                 await applyEventSpecById(hashMission, { updateHash: false, focusDefaultView: false });
             }
-            if (getHashFocusValue()) applyFocusHash();
+            if (getHashFollowValue() || getHashFocusValue()) applyFocusHash();
             else focusOverview(false);
         });
 
@@ -3671,14 +3750,16 @@
             document.getElementById('sim-dropdown').classList.toggle('open');
         };
 
-        // Slider maps 0-100 → MIN_SIM_SPEED to MAX_SIM_SPEED (exponential)
+        // Slider maps 0 → 1x, then 1-100 → MIN_SIM_SPEED to MAX_SIM_SPEED (exponential)
         function sliderToSpeed(val) {
-            const t = val / 100; // 0→1
+            if (val <= 0) return 1;
+            const t = (val - 1) / 99; // 1→100 maps to 0→1
             return Math.round(MIN_SIM_SPEED * Math.pow(MAX_SIM_SPEED / MIN_SIM_SPEED, t));
         }
 
         function speedToSlider(spd) {
-            return Math.round(100 * Math.log(spd / MIN_SIM_SPEED) / Math.log(MAX_SIM_SPEED / MIN_SIM_SPEED));
+            if (spd <= 1) return 0;
+            return Math.round(1 + 99 * Math.log(spd / MIN_SIM_SPEED) / Math.log(MAX_SIM_SPEED / MIN_SIM_SPEED));
         }
 
         function formatSpeedLabel(spd) {
@@ -4018,7 +4099,7 @@
                     : heliocentricOrbitMode
                     ? Math.min(0.95, planet.orbitBaseOpacity + 0.36)
                     : earthMoonOrbitLineMode
-                    ? (name === 'Earth' ? 0.28 : 0.26)
+                    ? (name === 'Earth' ? (earthMoonWideOrbitMode ? 0.28 : 0) : 0.26)
                     : planet.orbitBaseOpacity;
             }
             let missionRoutePointsLocal = [];
@@ -4062,8 +4143,20 @@
             } else if (currentEventKind === 'custom') {
                 missionRoutePointsWorld = flattenEventSegments(currentEventSegments);
                 missionRoutePointsLocal = missionRoutePointsWorld.map((point) => point.clone().sub(SOLAR_CENTER));
-                missionProgressT = (solarDateMs - currentEventStartMs) / Math.max(MS_PER_DAY, currentEventEndMs - currentEventStartMs);
                 missionCraftWorld = getCustomEventWorldPos(solarDateMs, currentEventSegments);
+                // Compute missionProgressT matching the per-segment timing of getCustomEventWorldPos
+                // so the color-change point aligns with the spacecraft position
+                let cumPoints = 0;
+                missionProgressT = 1;
+                for (let si = 0; si < currentEventSegments.length; si++) {
+                    const seg = currentEventSegments[si];
+                    if (solarDateMs <= seg.endMs) {
+                        const localT = Math.max(0, Math.min(1, (solarDateMs - seg.startMs) / Math.max(1, seg.endMs - seg.startMs)));
+                        missionProgressT = (cumPoints + localT * Math.max(1, seg.points.length - 1)) / Math.max(1, missionRoutePointsLocal.length - 1);
+                        break;
+                    }
+                    cumPoints += seg.points.length;
+                }
             }
 
             missionProgressT = Math.max(0, Math.min(1, missionProgressT));
@@ -4136,19 +4229,28 @@
             orionGroup.lookAt(selectedCraftLookTarget);
             sphereCraftGroup.lookAt(selectedCraftLookTarget);
             eventModelGroup.lookAt(selectedCraftLookTarget);
-            const solarCraftScaleBoost = activeView === 'solar-system' ? 5500 : 1;
+            const solarCraftScaleBoost = activeView === 'solar-system' ? 5500 : activeView === 'earth-moon' ? 8 : 1;
             const orionFollowReferenceDistance = Math.sqrt(4.5 * 4.5 + 4.5 * 4.5 + 10 * 10);
-            const eventFollowVisibilityScale =
+            const eventModelVisibilityScale =
                 currentEventVehicle === 'model' && cameraMode === 'follow-orion'
                     ? Math.max(1, (getFollowCameraOffset().length() / orionFollowReferenceDistance) * 2.4)
+                    : currentEventVehicle === 'model' && isEventView()
+                    ? Math.max(420, Math.min(4200, camera.position.distanceTo(controls.target) / 70))
                     : 1;
             orionGroup.scale.setScalar(solarCraftScaleBoost);
             sphereCraftGroup.scale.setScalar(solarCraftScaleBoost * 1.25);
-            eventModelGroup.scale.setScalar(solarCraftScaleBoost * eventFollowVisibilityScale);
+            const eventGroupScale = solarCraftScaleBoost * eventModelVisibilityScale;
+            eventModelGroup.scale.setScalar(eventGroupScale);
+            // Keep the beacon sprite at a constant 1.5 world-units regardless of group scale
+            if (eventBeaconSprite && eventGroupScale > 0) {
+                const s = 1.5 / eventGroupScale;
+                eventBeaconSprite.scale.set(s, s, 1);
+            }
             mars2033CraftGroup.scale.setScalar(activeView === 'solar-system' ? 1.65 : 1);
 
             // Beacon pulse
             beacon.material.opacity = 0.7 + 0.3 * Math.sin(now * 0.006);
+            if (eventBeaconSprite) eventBeaconSprite.material.opacity = 0.7 + 0.3 * Math.sin(now * 0.006);
             engineGlow.intensity = 2 + Math.sin(now * 0.004) * 1;
             if (eventModelEngineLight) {
                 eventModelEngineLight.intensity = 1.5 + Math.sin(now * 0.005) * 0.5;
@@ -4530,8 +4632,8 @@
             controls.target.copy(earthMoonFocusCamera.target);
             controls.update();
             starBackgroundGroup.position.copy(camera.position);
-            if (getHashFocusValue()) applyFocusHash();
-            else if (currentEventOverviewView === 'event') focusEventView(false);
+            if (getHashFollowValue() || getHashFocusValue()) applyFocusHash();
+            else if (currentEventOverviewView === 'event') focusEventView(false, true, currentEventPreserveStartupCamera);
             else {
                 focusOverview(false);
                 setFocusHash('overview');

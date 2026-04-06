@@ -1,8 +1,9 @@
 id: mars2033
 label: Mars 2033
 kind: mars
-vehicle: mars
-follow_label: Follow Mars
+vehicle: starship
+object_name: starship
+follow_label: Follow Starship
 mission_name: MARS 2033
 browser_title: Mars 2033 - 1005 Day Mission
 overview_label: Mission Overview

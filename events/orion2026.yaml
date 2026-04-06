@@ -2,6 +2,7 @@ id: orion2026
 label: Orion 2026
 kind: orion
 vehicle: sphere
+object_name: orion
 follow_label: Follow Orion
 mission_name: ARTEMIS II
 browser_title: Artemis II — Live Mission Tracker

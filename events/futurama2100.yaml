@@ -3,7 +3,9 @@ label: Futurama 2100
 kind: custom
 vehicle: model
 vehicle_label: Planet Express
+object_name: goodnews
 object:
+  name: goodnews
   path: spacecraft/goodnews.glb
   scale: 0.5
   rotation_y: 3.141592653589793
@@ -16,8 +18,8 @@ start_date: 2100-01-01T12:00:00Z
 end_date: 2100-04-20T12:00:00Z
 initial_view: event
 initial_camera:
-  position: [125000, 54000, 152000]
-  target: [10000, 0, 8000]
+  position: [57857.993, 29810.087, 115371.939]
+  target: [-5548.984, 36.376, 35975.376]
 phase_labels: [Launch, Moon Run, Slingshot, Inner Tour, Outer Tour, Deep Space]
 route:
   - date: 2100-01-01T12:00:00Z
