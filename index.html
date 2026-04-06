@@ -1278,7 +1278,7 @@
                 new THREE.Vector3(nextKm.x, nextKm.y, nextKm.z),
                 orionKm
             ).normalize();
-            orionGroup.lookAt(orionSc.clone().add(dir.clone().multiplyScalar(SCALE)));
+            orionGroup.lookAt(orionSc.clone().sub(dir.clone().multiplyScalar(SCALE)));
 
             // Beacon pulse — fade out when camera is close
             const camDist = camera.position.distanceTo(orionGroup.position);
