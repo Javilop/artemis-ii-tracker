@@ -612,7 +612,7 @@
         }
         .sim-opt:hover { background: rgba(255,107,53,0.15); color: #ff8855; }
         .sim-slider-wrap {
-            display: none; align-items: center; gap: 8px; margin-top: 4px;
+            display: flex; align-items: center; gap: 0; margin-top: 4px;
             pointer-events: auto;
         }
         .sim-slider-wrap.visible { display: flex; }
@@ -623,12 +623,12 @@
         }
         .sim-slider-wrap input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none; appearance: none;
-            width: 12px; height: 12px; border-radius: 50%;
-            background: #ff8855; cursor: pointer; border: none;
+            width: 10px; height: 16px; border-radius: 2px;
+            background: rgba(192,196,206,0.95); cursor: pointer; border: none;
         }
-        .sim-slider-label {
-            font-size: 10px; font-weight: 600; color: #ff8855;
-            min-width: 55px; text-align: right; letter-spacing: 0.5px;
+        .sim-slider-wrap input[type="range"]::-moz-range-thumb {
+            width: 10px; height: 16px; border-radius: 2px;
+            background: rgba(192,196,206,0.95); cursor: pointer; border: none;
         }
 
         #loading {
@@ -867,7 +867,7 @@
         <button class="hint-btn" id="btn-moon" onclick="focusMoon()">Focus Moon</button>
         <button class="hint-btn" id="btn-solar-system" onclick="focusSolarSystem()">Solar System</button>
         <div class="sim-group">
-            <button class="hint-btn" id="btn-sim" onclick="toggleSimMenu()">Model Speed</button>
+            <button class="hint-btn sim-active" id="btn-sim" onclick="toggleSimMenu()">Model Speed 1x</button>
             <div class="sim-dropdown" id="sim-dropdown">
                 <button class="sim-opt" onclick="setSpeed(1)">Speed 1x</button>
                 <button class="sim-opt" onclick="setSpeed(1000)">Speed 1,000x</button>
@@ -881,9 +881,8 @@
         </div>
         <button class="hint-btn" id="btn-reset" onclick="resetRealTime()" style="display:none">Reset to Real Time</button>
         <div class="sim-slider-wrap" id="sim-slider-wrap">
-            <input type="range" id="sim-slider" min="0" max="100" value="25"
+            <input type="range" id="sim-slider" min="0" max="100" value="0"
                    oninput="onSliderChange(this.value)">
-            <span class="sim-slider-label" id="sim-slider-label">Speed 1,000x</span>
         </div>
     </div>
 
@@ -980,6 +979,7 @@
         let currentEventPathColor = '#6b3fb3';
         let currentEventPhaseText = '';
         let currentEventDisableCompletion = false;
+        let currentEventObject = null;
         let currentEventFollowLabel = 'Follow';
         let currentEventName = '';
         let currentEventBrowserTitle = DEFAULT_BROWSER_TITLE;
@@ -1872,36 +1872,68 @@
         scene.add(orionGroup);
 
         // ═══════════════════════════════════════════
-        // PLANET EXPRESS SPACECRAFT
+        // GENERIC EVENT MODEL SPACECRAFT
         // ═══════════════════════════════════════════
-        const planetExpressGroup = new THREE.Group();
+        const eventModelGroup = new THREE.Group();
         const gltfLoader = new GLTFLoader();
-        let planetExpressModel = null;
-        let planetExpressEngineLight = null;
+        let eventModelNode = null;
+        let eventModelEngineLight = null;
+        let eventModelLoadedPath = '';
 
-        gltfLoader.load(
-            'spaceship Goodnews.glb',
-            (gltf) => {
-                planetExpressModel = gltf.scene;
-                planetExpressModel.scale.set(0.5, 0.5, 0.5);
-                planetExpressModel.rotation.y = Math.PI;
-                planetExpressEngineLight = new THREE.PointLight(0xff6b35, 1.5, 5);
-                planetExpressEngineLight.position.set(0, 0, -2);
-                planetExpressModel.add(planetExpressEngineLight);
-                planetExpressGroup.add(planetExpressModel);
-                console.info('Planet Express ship loaded successfully.');
-            },
-            undefined,
-            (error) => {
-                console.warn('Planet Express ship failed to load.', error);
+        const eventModelLabel = createLabel('OBJECT', '#ff6b35');
+        eventModelLabel.position.set(0, 0.6, 0);
+        eventModelGroup.add(eventModelLabel);
+        eventModelGroup.visible = false;
+        scene.add(eventModelGroup);
+
+        function loadEventObjectModel(objectConfig) {
+            if (!objectConfig?.path) {
+                if (eventModelNode) {
+                    eventModelGroup.remove(eventModelNode);
+                    eventModelNode = null;
+                }
+                if (eventModelEngineLight) {
+                    eventModelGroup.remove(eventModelEngineLight);
+                    eventModelEngineLight = null;
+                }
+                eventModelLoadedPath = '';
+                return;
             }
-        );
-
-        const planetExpressLabel = createLabel('Planet Express', '#ff6b35');
-        planetExpressLabel.position.set(0, 0.6, 0);
-        planetExpressGroup.add(planetExpressLabel);
-        planetExpressGroup.visible = false;
-        scene.add(planetExpressGroup);
+            if (eventModelLoadedPath === objectConfig.path && eventModelNode) {
+                eventModelNode.scale.setScalar(objectConfig.scale);
+                eventModelNode.rotation.y = objectConfig.rotationY;
+                return;
+            }
+            if (eventModelNode) {
+                eventModelGroup.remove(eventModelNode);
+                eventModelNode = null;
+            }
+            if (eventModelEngineLight) {
+                eventModelGroup.remove(eventModelEngineLight);
+                eventModelEngineLight = null;
+            }
+            eventModelLoadedPath = objectConfig.path;
+            gltfLoader.load(
+                objectConfig.path,
+                (gltf) => {
+                    if (eventModelLoadedPath !== objectConfig.path) return;
+                    eventModelNode = gltf.scene;
+                    eventModelNode.scale.setScalar(objectConfig.scale);
+                    eventModelNode.rotation.y = objectConfig.rotationY;
+                    eventModelEngineLight = new THREE.PointLight(0xff6b35, 1.5, 5);
+                    eventModelEngineLight.position.set(0, 0, -2);
+                    eventModelGroup.add(eventModelEngineLight);
+                    eventModelGroup.add(eventModelNode);
+                    eventModelLabel.position.set(0, 0.6, 0);
+                },
+                undefined,
+                (error) => {
+                    if (eventModelLoadedPath === objectConfig.path) {
+                        console.warn(`Event object failed to load: ${objectConfig.path}`, error);
+                    }
+                }
+            );
+        }
 
         const sphereCraftGroup = new THREE.Group();
         const sphereCraft = new THREE.Mesh(
@@ -1914,130 +1946,6 @@
         sphereCraftGroup.add(sphereLabel);
         sphereCraftGroup.visible = false;
         scene.add(sphereCraftGroup);
-
-        const hotdogCraftGroup = new THREE.Group();
-        hotdogCraftGroup.scale.set(1.45, 1.45, 1.45);
-        const hotdogBunMat = new THREE.MeshStandardMaterial({
-            color: 0xd6a05c,
-            roughness: 0.9,
-            metalness: 0.04
-        });
-        const hotdogBunShadowMat = new THREE.MeshStandardMaterial({
-            color: 0xb78042,
-            roughness: 0.94,
-            metalness: 0.03
-        });
-        const hotdogSausageMat = new THREE.MeshStandardMaterial({
-            color: 0x9b4328,
-            roughness: 0.72,
-            metalness: 0.05
-        });
-        const condimentRedMat = new THREE.MeshStandardMaterial({
-            color: 0xd62f1a,
-            roughness: 0.6,
-            metalness: 0.02
-        });
-        const condimentYellowMat = new THREE.MeshStandardMaterial({
-            color: 0xe3ba1f,
-            roughness: 0.55,
-            metalness: 0.02
-        });
-        const relishMat = new THREE.MeshStandardMaterial({
-            color: 0x4d9f3d,
-            roughness: 0.78,
-            metalness: 0.02
-        });
-        const sesameMat = new THREE.MeshStandardMaterial({
-            color: 0xf7e6bf,
-            roughness: 0.85,
-            metalness: 0.01
-        });
-        const nozzleMat = new THREE.MeshStandardMaterial({
-            color: 0x8ea0b8,
-            roughness: 0.34,
-            metalness: 0.78
-        });
-        const bunLower = new THREE.Mesh(new THREE.CapsuleGeometry(0.24, 1.02, 8, 18), hotdogBunMat);
-        bunLower.rotation.z = Math.PI / 2;
-        bunLower.scale.set(1, 0.46, 0.86);
-        bunLower.position.set(0, -0.1, 0);
-        hotdogCraftGroup.add(bunLower);
-        const bunLowerShadow = new THREE.Mesh(new THREE.CapsuleGeometry(0.18, 0.95, 8, 16), hotdogBunShadowMat);
-        bunLowerShadow.rotation.z = Math.PI / 2;
-        bunLowerShadow.scale.set(1, 0.18, 0.72);
-        bunLowerShadow.position.set(0, -0.18, 0);
-        hotdogCraftGroup.add(bunLowerShadow);
-        const bunUpper = new THREE.Mesh(new THREE.CapsuleGeometry(0.22, 0.96, 8, 18), hotdogBunMat);
-        bunUpper.rotation.z = Math.PI / 2;
-        bunUpper.scale.set(1, 0.34, 0.78);
-        bunUpper.position.set(0.04, 0.16, 0);
-        hotdogCraftGroup.add(bunUpper);
-        const bunLeftWall = new THREE.Mesh(new THREE.CapsuleGeometry(0.09, 0.94, 8, 12), hotdogBunMat);
-        bunLeftWall.rotation.z = Math.PI / 2;
-        bunLeftWall.rotation.x = 0.18;
-        bunLeftWall.scale.set(1, 0.22, 0.28);
-        bunLeftWall.position.set(0, 0.04, 0.16);
-        hotdogCraftGroup.add(bunLeftWall);
-        const bunRightWall = bunLeftWall.clone();
-        bunRightWall.position.z = -0.16;
-        bunRightWall.rotation.x = -0.18;
-        hotdogCraftGroup.add(bunRightWall);
-        const sausage = new THREE.Mesh(new THREE.CapsuleGeometry(0.14, 1.1, 8, 16), hotdogSausageMat);
-        sausage.rotation.z = Math.PI / 2;
-        sausage.position.set(0.02, 0.04, 0);
-        hotdogCraftGroup.add(sausage);
-        const ketchupCurve = new THREE.CatmullRomCurve3([
-            new THREE.Vector3(-0.58, 0.18, -0.035),
-            new THREE.Vector3(-0.28, 0.235, 0.045),
-            new THREE.Vector3(0.03, 0.18, -0.03),
-            new THREE.Vector3(0.32, 0.24, 0.045),
-            new THREE.Vector3(0.6, 0.18, -0.035)
-        ]);
-        hotdogCraftGroup.add(new THREE.Mesh(new THREE.TubeGeometry(ketchupCurve, 36, 0.026, 8, false), condimentRedMat));
-        const mustardCurve = new THREE.CatmullRomCurve3([
-            new THREE.Vector3(-0.56, 0.14, 0.05),
-            new THREE.Vector3(-0.24, 0.205, -0.03),
-            new THREE.Vector3(0.1, 0.145, 0.04),
-            new THREE.Vector3(0.38, 0.205, -0.03),
-            new THREE.Vector3(0.62, 0.145, 0.04)
-        ]);
-        hotdogCraftGroup.add(new THREE.Mesh(new THREE.TubeGeometry(mustardCurve, 36, 0.02, 8, false), condimentYellowMat));
-        const relishCurve = new THREE.CatmullRomCurve3([
-            new THREE.Vector3(-0.54, 0.11, 0.0),
-            new THREE.Vector3(-0.18, 0.16, 0.055),
-            new THREE.Vector3(0.14, 0.1, -0.04),
-            new THREE.Vector3(0.42, 0.16, 0.055),
-            new THREE.Vector3(0.58, 0.11, 0.0)
-        ]);
-        hotdogCraftGroup.add(new THREE.Mesh(new THREE.TubeGeometry(relishCurve, 30, 0.018, 7, false), relishMat));
-        [
-            [-0.42, 0.28, 0.11, -0.45],
-            [-0.18, 0.31, -0.08, -0.2],
-            [0.02, 0.285, 0.07, 0.15],
-            [0.26, 0.315, -0.06, -0.1],
-            [0.48, 0.27, 0.1, 0.35]
-        ].forEach(([x, y, z, rz]) => {
-            const seed = new THREE.Mesh(new THREE.CapsuleGeometry(0.012, 0.04, 4, 6), sesameMat);
-            seed.rotation.z = rz;
-            seed.rotation.x = 0.55;
-            seed.position.set(x, y, z);
-            hotdogCraftGroup.add(seed);
-        });
-        const leftNozzle = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.18, 10), nozzleMat);
-        leftNozzle.rotation.z = Math.PI / 2;
-        leftNozzle.position.set(-0.7, 0.01, 0.08);
-        hotdogCraftGroup.add(leftNozzle);
-        const rightNozzle = leftNozzle.clone();
-        rightNozzle.position.z = -0.08;
-        hotdogCraftGroup.add(rightNozzle);
-        const hotdogEngineGlow = new THREE.PointLight(0xff8a3c, 1.6, 4.5);
-        hotdogEngineGlow.position.set(-0.8, 0.02, 0);
-        hotdogCraftGroup.add(hotdogEngineGlow);
-        const hotdogLabel = createLabel('HOTDOG', '#ffca8c');
-        hotdogLabel.position.set(0, 0.88, 0);
-        hotdogCraftGroup.add(hotdogLabel);
-        hotdogCraftGroup.visible = false;
-        scene.add(hotdogCraftGroup);
 
         // ═══════════════════════════════════════════
         // LIGHTING
@@ -2231,7 +2139,7 @@
 
         function getDefaultVehicleLabel(vehicle) {
             switch (vehicle) {
-                case 'futurama':
+                case 'model':
                     return 'Planet Express';
                 case 'mars':
                     return 'MARS 2033';
@@ -2240,6 +2148,25 @@
                 default:
                     return 'ORION';
             }
+        }
+
+        function normalizeEventObject(rawObject) {
+            if (!rawObject) return null;
+            if (typeof rawObject === 'string') {
+                return {
+                    path: rawObject,
+                    scale: 0.5,
+                    rotationY: Math.PI
+                };
+            }
+            if (typeof rawObject !== 'object') return null;
+            const path = `${rawObject.path || rawObject.src || ''}`.trim();
+            if (!path) return null;
+            return {
+                path,
+                scale: Number(rawObject.scale) || 0.5,
+                rotationY: Number.isFinite(Number(rawObject.rotation_y)) ? Number(rawObject.rotation_y) : Math.PI
+            };
         }
 
         function normalizeEventSpec(rawSpec, missionId) {
@@ -2255,6 +2182,7 @@
                 pathColor: parseEventColor(spec.path_color),
                 phaseText: `${spec.phase_text || ''}`.trim(),
                 disableCompletion: Boolean(spec.disable_completion),
+                object: normalizeEventObject(spec.object),
                 followLabel: spec.follow_label || 'Follow Mission',
                 missionName: spec.mission_name || missionId.toUpperCase(),
                 browserTitle: spec.browser_title || DEFAULT_BROWSER_TITLE,
@@ -2879,8 +2807,8 @@
             switch (currentEventVehicle) {
                 case 'orion':
                     return orionGroup;
-                case 'futurama':
-                    return planetExpressGroup;
+                case 'model':
+                    return eventModelGroup;
                 case 'mars':
                     return mars2033CraftGroup;
                 default:
@@ -2950,8 +2878,7 @@
         function syncEventVehicleVisibility() {
             orionGroup.visible = currentEventVehicle === 'orion';
             sphereCraftGroup.visible = currentEventVehicle === 'sphere';
-            planetExpressGroup.visible = currentEventVehicle === 'futurama';
-            hotdogCraftGroup.visible = false;
+            eventModelGroup.visible = currentEventVehicle === 'model';
             mars2033CraftGroup.visible = currentEventVehicle === 'mars' && (isEventView() || cameraMode === 'follow-orion');
         }
 
@@ -2965,6 +2892,7 @@
 
         function updateVehicleLabels() {
             setLabelText(sphereLabel, currentEventVehicleLabel, '#ffb088');
+            setLabelText(eventModelLabel, currentEventVehicleLabel, '#ff6b35');
         }
 
         function updateEventVideoPanel() {
@@ -3047,6 +2975,7 @@
             currentEventPathColor = spec.pathColor || '#6b3fb3';
             currentEventPhaseText = spec.phaseText || '';
             currentEventDisableCompletion = Boolean(spec.disableCompletion);
+            currentEventObject = spec.object || null;
             currentEventFollowLabel = spec.followLabel;
             currentEventName = spec.missionName;
             currentEventBrowserTitle = spec.browserTitle;
@@ -3096,6 +3025,7 @@
             updateHeaderText();
             updateVehicleLabels();
             updateEventVideoPanel();
+            loadEventObjectModel(currentEventObject);
             mars2033TransferLine.material.color.set(currentEventPathColor);
             mars2033TransferGlow.material.color.set(currentEventPathColor);
             syncEventVehicleVisibility();
@@ -3728,6 +3658,7 @@
                 payload.cameraMode,
                 payload.vantagePoint
             );
+            closeObserverSpecs();
         };
 
         window.toggleTimelineDateEditor = (event) => {
@@ -3754,27 +3685,51 @@
             return `Speed ${spd.toLocaleString()}x`;
         }
 
+        function getSpeedButtonLabel() {
+            return speedMult > 1 ? formatSpeedLabel(speedMult) : 'Model Speed 1x';
+        }
+
+        let resetButtonTimer = null;
+
+        function showResetButtonTemporarily(durationMs = 4000) {
+            const resetBtn = document.getElementById('btn-reset');
+            if (!resetBtn) return;
+            if (resetButtonTimer) {
+                clearTimeout(resetButtonTimer);
+                resetButtonTimer = null;
+            }
+            resetBtn.style.display = 'block';
+            resetButtonTimer = window.setTimeout(() => {
+                resetBtn.style.display = 'none';
+                resetButtonTimer = null;
+            }, durationMs);
+        }
+
+        function hideResetButton() {
+            const resetBtn = document.getElementById('btn-reset');
+            if (!resetBtn) return;
+            if (resetButtonTimer) {
+                clearTimeout(resetButtonTimer);
+                resetButtonTimer = null;
+            }
+            resetBtn.style.display = 'none';
+        }
+
         function refreshSpeedControls() {
             const simBtn = document.getElementById('btn-sim');
-            const resetBtn = document.getElementById('btn-reset');
             const sliderWrap = document.getElementById('sim-slider-wrap');
             const slider = document.getElementById('sim-slider');
-            const sliderLabel = document.getElementById('sim-slider-label');
-            const accelerated = speedMult > 1;
 
-            simBtn.classList.toggle('sim-active', accelerated);
-            simBtn.textContent = accelerated ? formatSpeedLabel(speedMult) : 'Model Speed';
-            resetBtn.style.display = accelerated ? 'block' : 'none';
-            sliderWrap.classList.toggle('visible', accelerated);
-            if (accelerated) {
-                slider.value = speedToSlider(speedMult);
-            }
-            sliderLabel.textContent = formatSpeedLabel(accelerated ? speedMult : 1);
+            simBtn.classList.add('sim-active');
+            simBtn.textContent = getSpeedButtonLabel();
+            sliderWrap.classList.add('visible');
+            slider.value = speedMult > 1 ? speedToSlider(speedMult) : '0';
         }
 
         window.setSpeed = (spd) => {
             if (spd <= 1) {
                 resetRealTime();
+                showResetButtonTemporarily();
                 return;
             }
             simStartReal = Date.now();
@@ -3789,6 +3744,7 @@
             speedMult = spd;
             document.getElementById('sim-dropdown').classList.remove('open');
             refreshSpeedControls();
+            showResetButtonTemporarily();
             updatePlaybackButton();
         };
 
@@ -3806,6 +3762,7 @@
             pausedSolarDateMs = null;
             speedMult = spd;
             refreshSpeedControls();
+            showResetButtonTemporarily();
             updatePlaybackButton();
         };
 
@@ -3821,7 +3778,7 @@
                 paused = false;
                 pausedDay = null;
                 pausedSolarDateMs = null;
-                document.getElementById('btn-reset').style.display = 'block';
+                showResetButtonTemporarily();
             } else {
                 pausedDay = getCurrentSceneDay(now);
                 pausedSolarDateMs = getCurrentSolarDateMs(now);
@@ -3829,7 +3786,7 @@
                 simStartReal = null;
                 simStartDay = null;
                 solarSimStartDateMs = null;
-                document.getElementById('btn-reset').style.display = 'block';
+                showResetButtonTemporarily();
             }
             updatePlaybackButton();
         };
@@ -3844,11 +3801,8 @@
             pausedSolarDateMs = null;
             scrubDay = null;
             scrubSolarDateMs = null;
-            document.getElementById('btn-sim').classList.remove('sim-active');
-            document.getElementById('btn-sim').textContent = 'Model Speed';
-            document.getElementById('btn-reset').style.display = 'none';
-            document.getElementById('sim-slider-wrap').classList.remove('visible');
-            document.getElementById('sim-slider-label').textContent = formatSpeedLabel(1);
+            hideResetButton();
+            refreshSpeedControls();
             updatePlaybackButton();
         };
 
@@ -3877,11 +3831,8 @@
             solarSimStartDateMs = null;
             if (speedMult > 1) {
                 speedMult = 1;
-                document.getElementById('btn-sim').classList.remove('sim-active');
-                document.getElementById('btn-sim').textContent = 'Model Speed';
-                document.getElementById('btn-reset').style.display = 'none';
-                document.getElementById('sim-slider-wrap').classList.remove('visible');
-                document.getElementById('sim-slider-label').textContent = formatSpeedLabel(1);
+                hideResetButton();
+                refreshSpeedControls();
             }
             updatePlaybackButton();
         };
@@ -3891,9 +3842,14 @@
             const slider = document.getElementById('timeline-slider');
             const progressTrack = document.getElementById('progress-track');
             const planetDateInput = document.getElementById('planet-date-input');
+            const simSlider = document.getElementById('sim-slider');
             if (slider) {
                 slider.addEventListener('pointerup', () => { scrubbing = false; });
                 slider.addEventListener('touchend', () => { scrubbing = false; });
+            }
+            if (simSlider) {
+                simSlider.addEventListener('pointerdown', () => { showResetButtonTemporarily(); });
+                simSlider.addEventListener('touchstart', () => { showResetButtonTemporarily(); }, { passive: true });
             }
             if (planetDateInput) {
                 planetDateInput.addEventListener('blur', () => {
@@ -4176,24 +4132,26 @@
                 : activeEventWorldPos.clone().add(activeEventWorldDir.clone().multiplyScalar(4000));
             orionGroup.position.copy(selectedCraftWorld);
             sphereCraftGroup.position.copy(selectedCraftWorld);
-            planetExpressGroup.position.copy(selectedCraftWorld);
-            hotdogCraftGroup.position.copy(selectedCraftWorld);
+            eventModelGroup.position.copy(selectedCraftWorld);
             orionGroup.lookAt(selectedCraftLookTarget);
             sphereCraftGroup.lookAt(selectedCraftLookTarget);
-            planetExpressGroup.lookAt(selectedCraftLookTarget);
-            hotdogCraftGroup.lookAt(selectedCraftLookTarget);
+            eventModelGroup.lookAt(selectedCraftLookTarget);
             const solarCraftScaleBoost = activeView === 'solar-system' ? 5500 : 1;
+            const orionFollowReferenceDistance = Math.sqrt(4.5 * 4.5 + 4.5 * 4.5 + 10 * 10);
+            const eventFollowVisibilityScale =
+                currentEventVehicle === 'model' && cameraMode === 'follow-orion'
+                    ? Math.max(1, (getFollowCameraOffset().length() / orionFollowReferenceDistance) * 2.4)
+                    : 1;
             orionGroup.scale.setScalar(solarCraftScaleBoost);
             sphereCraftGroup.scale.setScalar(solarCraftScaleBoost * 1.25);
-            planetExpressGroup.scale.setScalar(solarCraftScaleBoost);
-            hotdogCraftGroup.scale.setScalar(1.45 * solarCraftScaleBoost);
+            eventModelGroup.scale.setScalar(solarCraftScaleBoost * eventFollowVisibilityScale);
             mars2033CraftGroup.scale.setScalar(activeView === 'solar-system' ? 1.65 : 1);
 
             // Beacon pulse
             beacon.material.opacity = 0.7 + 0.3 * Math.sin(now * 0.006);
             engineGlow.intensity = 2 + Math.sin(now * 0.004) * 1;
-            if (planetExpressEngineLight) {
-                planetExpressEngineLight.intensity = 1.5 + Math.sin(now * 0.005) * 0.5;
+            if (eventModelEngineLight) {
+                eventModelEngineLight.intensity = 1.5 + Math.sin(now * 0.005) * 0.5;
             }
 
             // ── Traveled trajectory ──
@@ -4286,8 +4244,7 @@
             moonLabel.lookAt(camera.position);
             orionLabel.lookAt(camera.position);
             sphereLabel.lookAt(camera.position);
-            planetExpressLabel.lookAt(camera.position);
-            hotdogLabel.lookAt(camera.position);
+            eventModelLabel.lookAt(camera.position);
             mars2033CraftLabel.lookAt(camera.position);
             for (const name in solarPlanets) {
                 solarPlanets[name].label.lookAt(camera.position);
@@ -4562,8 +4519,7 @@
             );
             orionGroup.position.copy(activeEventWorldPos);
             sphereCraftGroup.position.copy(activeEventWorldPos);
-            planetExpressGroup.position.copy(activeEventWorldPos);
-            hotdogCraftGroup.position.copy(activeEventWorldPos);
+            eventModelGroup.position.copy(activeEventWorldPos);
             mars2033CraftGroup.position.copy(activeEventWorldPos.clone().sub(SOLAR_CENTER));
             document.getElementById('event').value = currentEventId;
             syncEventVehicleVisibility();
