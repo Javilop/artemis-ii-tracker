@@ -959,6 +959,7 @@
         const SOLAR_ORBIT_TUBE_MAX = 38;
         const DEFAULT_SOLAR_DATE = new Date();
         const NASA_AROW_POST_API = 'https://www.nasa.gov/wp-json/wp/v2/posts/943368';
+        const NASA_AROW_HISTORIC_DEFAULT_ZIP = 'https://www.nasa.gov/wp-content/uploads/2026/03/artemis-ii-oem-2026-04-02-to-ei-v3.zip';
         const NASA_AROW_FETCH_TIMEOUT_MS = 12000;
         const DEFAULT_SOLAR_DATE_MS = Date.UTC(
             DEFAULT_SOLAR_DATE.getUTCFullYear(),
@@ -1171,6 +1172,7 @@
         const TRAJ_STEP_DAYS = 2 / 24; // 2 hours between points
         const TRAJ_N = NASA_TRAJ.length; // 107 points
         let liveTrajectorySamples = [];
+        let historicTrajectorySamples = [];
 
         // Catmull-Rom interpolation for smooth curve through real data
         function catmullRom(p0, p1, p2, p3, t) {
@@ -1260,12 +1262,33 @@
             return pts;
         }
 
-        function getLiveTrajectoryBounds() {
-            if (!liveTrajectorySamples.length) return null;
+        function getTrajectorySampleBounds(samples) {
+            if (!samples.length) return null;
             return {
-                startDay: liveTrajectorySamples[0].day,
-                endDay: liveTrajectorySamples[liveTrajectorySamples.length - 1].day
+                startDay: samples[0].day,
+                endDay: samples[samples.length - 1].day
             };
+        }
+
+        function getLiveTrajectoryBounds() {
+            return getTrajectorySampleBounds(liveTrajectorySamples);
+        }
+
+        function getHistoricTrajectoryBounds() {
+            return getTrajectorySampleBounds(historicTrajectorySamples);
+        }
+
+        function getActiveTrajectorySourceLabel() {
+            if (liveTrajectorySamples.length >= 2 && historicTrajectorySamples.length >= 2) {
+                return 'Live NASA AROW Ephemeris + NASA AROW Historic Default';
+            }
+            if (historicTrajectorySamples.length >= 2) {
+                return 'NASA AROW Historic Default';
+            }
+            if (liveTrajectorySamples.length >= 2) {
+                return 'Live NASA AROW Ephemeris';
+            }
+            return 'Embedded JPL Horizons Fallback';
         }
 
         function interpolateTrajectorySamples(samples, day) {
@@ -1290,15 +1313,85 @@
             return catmullRom(s0, s1, s2, s3, t);
         }
 
+        function cubicBezier(p0, p1, p2, p3, t) {
+            const omt = 1 - t;
+            const omt2 = omt * omt;
+            const t2 = t * t;
+            return new THREE.Vector3(
+                omt2 * omt * p0.x + 3 * omt2 * t * p1.x + 3 * omt * t2 * p2.x + t2 * t * p3.x,
+                omt2 * omt * p0.y + 3 * omt2 * t * p1.y + 3 * omt * t2 * p2.y + t2 * t * p3.y,
+                omt2 * omt * p0.z + 3 * omt2 * t * p1.z + 3 * omt * t2 * p2.z + t2 * t * p3.z
+            );
+        }
+
+        function getLaunchBridgeAnchorSamples() {
+            if (historicTrajectorySamples.length >= 2) return historicTrajectorySamples;
+            if (liveTrajectorySamples.length >= 2) return liveTrajectorySamples;
+            return [];
+        }
+
+        function getLaunchBridgePos(day) {
+            const anchorSamples = getLaunchBridgeAnchorSamples();
+            if (!anchorSamples.length) return new THREE.Vector3(0, 0, 0);
+            const first = anchorSamples[0];
+            if (day <= 0) return new THREE.Vector3(0, 0, 0);
+            if (day >= first.day) return first.position.clone();
+            const second = anchorSamples[Math.min(anchorSamples.length - 1, 1)];
+            const start = new THREE.Vector3(0, 0, 0);
+            const bridgeDuration = Math.max(first.day, 1e-9);
+            const sampleSpan = Math.max(1e-9, second.day - first.day);
+            const endTangent = second.position.clone().sub(first.position).multiplyScalar(bridgeDuration / sampleSpan);
+            const startTangent = first.position.clone().multiplyScalar(0.62);
+            const c1 = start.clone().add(startTangent.multiplyScalar(1 / 3));
+            const c2 = first.position.clone().sub(endTangent.multiplyScalar(1 / 3));
+            const t = Math.max(0, Math.min(1, day / Math.max(first.day, 1e-9)));
+            return cubicBezier(start, c1, c2, first.position, t);
+        }
+
         function getTrajectoryPos(day) {
+            const historicBounds = getHistoricTrajectoryBounds();
             if (liveTrajectorySamples.length >= 2) {
-                return interpolateTrajectorySamples(liveTrajectorySamples, day);
+                const liveBounds = getLiveTrajectoryBounds();
+                if (liveBounds && day >= liveBounds.startDay && day <= liveBounds.endDay) {
+                    return interpolateTrajectorySamples(liveTrajectorySamples, day);
+                }
+            }
+            if (historicTrajectorySamples.length >= 2) {
+                if (historicBounds && day >= historicBounds.startDay && day <= historicBounds.endDay) {
+                    return interpolateTrajectorySamples(historicTrajectorySamples, day);
+                }
+                if (historicBounds && day >= 0 && day < historicBounds.startDay) {
+                    return getLaunchBridgePos(day);
+                }
+            }
+            if (liveTrajectorySamples.length >= 2) {
+                const liveBounds = getLiveTrajectoryBounds();
+                if (liveBounds && day >= 0 && day < liveBounds.startDay) {
+                    return getLaunchBridgePos(day);
+                }
             }
             return getFallbackTrajectoryPos(day);
         }
 
-        function buildLiveTrajectoryCurve() {
-            return liveTrajectorySamples.map(sample =>
+        function buildTrajectorySegmentFromSampler(startDay, endDay, sampler, subdivisionsPerDay = 120) {
+            const pts = [];
+            const safeEndDay = Math.max(startDay, endDay);
+            const step = 1 / Math.max(1, subdivisionsPerDay);
+            for (let day = startDay; day < safeEndDay; day += step) {
+                const p = sampler(day);
+                pts.push(new THREE.Vector3(p.x * SCALE, p.y * SCALE, p.z * SCALE));
+            }
+            const endPoint = sampler(safeEndDay);
+            pts.push(new THREE.Vector3(endPoint.x * SCALE, endPoint.y * SCALE, endPoint.z * SCALE));
+            return pts;
+        }
+
+        function buildFallbackTrajectorySegment(startDay, endDay, subdivisionsPerDay = 120) {
+            return buildTrajectorySegmentFromSampler(startDay, endDay, getFallbackTrajectoryPos, subdivisionsPerDay);
+        }
+
+        function buildSampleTrajectoryCurve(samples) {
+            return samples.map(sample =>
                 new THREE.Vector3(
                     sample.position.x * SCALE,
                     sample.position.y * SCALE,
@@ -1308,15 +1401,51 @@
         }
 
         function buildTrajectoryCurve() {
-            if (liveTrajectorySamples.length >= 2) {
-                return buildLiveTrajectoryCurve();
+            if (historicTrajectorySamples.length >= 2 || liveTrajectorySamples.length >= 2) {
+                const points = [];
+                const appendCurvePoints = (curvePoints) => {
+                    if (!curvePoints.length) return;
+                    const nextPoints = points.length && points[points.length - 1].distanceTo(curvePoints[0]) < 1e-6
+                        ? curvePoints.slice(1)
+                        : curvePoints;
+                    points.push(...nextPoints);
+                };
+                const historicBounds = getHistoricTrajectoryBounds();
+                const liveBounds = getLiveTrajectoryBounds();
+                const bridgeEndDay = historicBounds?.startDay ?? liveBounds?.startDay ?? 0;
+                if (bridgeEndDay > 0) {
+                    appendCurvePoints(buildTrajectorySegmentFromSampler(0, bridgeEndDay, getLaunchBridgePos, 180));
+                }
+                if (historicTrajectorySamples.length >= 2) {
+                    const historicSamplesForCurve = liveBounds
+                        ? historicTrajectorySamples.filter(sample => sample.day < liveBounds.startDay)
+                        : historicTrajectorySamples;
+                    appendCurvePoints(buildSampleTrajectoryCurve(historicSamplesForCurve));
+                }
+                if (liveTrajectorySamples.length >= 2) {
+                    const liveCurve = buildSampleTrajectoryCurve(liveTrajectorySamples);
+                    appendCurvePoints(liveCurve);
+                }
+                if (points.length) {
+                    return points;
+                }
             }
             return buildFallbackTrajectoryCurve();
         }
 
         function getTrajectoryCurveBounds() {
+            const historicBounds = getHistoricTrajectoryBounds();
             const liveBounds = getLiveTrajectoryBounds();
-            if (liveBounds) return liveBounds;
+            if (historicBounds || liveBounds) {
+                return {
+                    startDay: 0,
+                    endDay: Math.max(
+                        historicBounds?.endDay ?? 0,
+                        liveBounds?.endDay ?? 0,
+                        TRAJ_START_DAY + (TRAJ_N - 1) * TRAJ_STEP_DAYS
+                    )
+                };
+            }
             return {
                 startDay: TLI_DAY,
                 endDay: TRAJ_START_DAY + (TRAJ_N - 1) * TRAJ_STEP_DAYS
@@ -1381,16 +1510,7 @@
             }
         }
 
-        async function loadLiveArowTrajectory() {
-            const postResponse = await fetchWithTimeout(NASA_AROW_POST_API, {
-                headers: { Accept: 'application/json' }
-            });
-            if (!postResponse.ok) {
-                throw new Error(`NASA AROW post lookup failed: ${postResponse.status}`);
-            }
-
-            const postPayload = await postResponse.json();
-            const zipUrl = extractArowZipUrl(postPayload);
+        async function loadArowSamplesFromZipUrl(zipUrl) {
             const zipResponse = await fetchWithTimeout(zipUrl, {}, NASA_AROW_FETCH_TIMEOUT_MS * 2);
             if (!zipResponse.ok) {
                 throw new Error(`NASA ephemeris ZIP download failed: ${zipResponse.status}`);
@@ -1407,9 +1527,32 @@
             if (samples.length < 2) {
                 throw new Error('NASA ephemeris OEM did not contain enough samples.');
             }
+            return samples;
+        }
 
+        async function loadHistoricArowTrajectory() {
+            const samples = await loadArowSamplesFromZipUrl(NASA_AROW_HISTORIC_DEFAULT_ZIP);
+            historicTrajectorySamples = samples;
+            setTrajectorySourceLabel(getActiveTrajectorySourceLabel());
+            console.info('Loaded NASA AROW historic default trajectory.', {
+                samples: samples.length,
+                zipUrl: NASA_AROW_HISTORIC_DEFAULT_ZIP
+            });
+        }
+
+        async function loadLiveArowTrajectory() {
+            const postResponse = await fetchWithTimeout(NASA_AROW_POST_API, {
+                headers: { Accept: 'application/json' }
+            });
+            if (!postResponse.ok) {
+                throw new Error(`NASA AROW post lookup failed: ${postResponse.status}`);
+            }
+
+            const postPayload = await postResponse.json();
+            const zipUrl = extractArowZipUrl(postPayload);
+            const samples = await loadArowSamplesFromZipUrl(zipUrl);
             liveTrajectorySamples = samples;
-            setTrajectorySourceLabel('Live NASA AROW Ephemeris');
+            setTrajectorySourceLabel(getActiveTrajectorySourceLabel());
             console.info('Loaded live NASA AROW trajectory.', {
                 samples: samples.length,
                 zipUrl
@@ -1426,27 +1569,70 @@
             }
         }
 
+        async function initHistoricArowTrajectory() {
+            try {
+                await loadHistoricArowTrajectory();
+            } catch (error) {
+                historicTrajectorySamples = [];
+                setTrajectorySourceLabel(getActiveTrajectorySourceLabel());
+                console.warn('NASA AROW historic default trajectory unavailable, using embedded fallback.', error);
+            }
+        }
+
         let liveArowLoadPromise = null;
+        let historicArowLoadPromise = null;
+
+        function ensureHistoricOrionTrajectoryLoaded() {
+            if (currentEventKind !== 'orion') {
+                return Promise.resolve(false);
+            }
+            if (historicTrajectorySamples.length >= 2) {
+                setTrajectorySourceLabel(getActiveTrajectorySourceLabel());
+                return Promise.resolve(true);
+            }
+            if (historicArowLoadPromise) return historicArowLoadPromise;
+            setTrajectorySourceLabel('Loading NASA AROW Historic Default...');
+            historicArowLoadPromise = initHistoricArowTrajectory()
+                .then(() => {
+                    refreshTrajectoryVisuals();
+                    return historicTrajectorySamples.length >= 2;
+                })
+                .finally(() => {
+                    historicArowLoadPromise = null;
+                });
+            return historicArowLoadPromise;
+        }
 
         function ensureOrionArowLoaded() {
             if (currentEventKind !== 'orion') {
                 return Promise.resolve(false);
             }
-            if (liveTrajectorySamples.length >= 2) {
-                setTrajectorySourceLabel('Live NASA AROW Ephemeris');
+            const tasks = [];
+            if (historicTrajectorySamples.length < 2) {
+                tasks.push(ensureHistoricOrionTrajectoryLoaded());
+            }
+            if (liveTrajectorySamples.length < 2) {
+                if (!liveArowLoadPromise) {
+                    setTrajectorySourceLabel('Loading NASA AROW Ephemeris...');
+                    liveArowLoadPromise = initLiveArowTrajectory()
+                        .then(() => {
+                            refreshTrajectoryVisuals();
+                            return liveTrajectorySamples.length >= 2;
+                        })
+                        .finally(() => {
+                            liveArowLoadPromise = null;
+                        });
+                }
+                tasks.push(liveArowLoadPromise);
+            }
+            if (!tasks.length) {
+                setTrajectorySourceLabel(getActiveTrajectorySourceLabel());
                 return Promise.resolve(true);
             }
-            if (liveArowLoadPromise) return liveArowLoadPromise;
-            setTrajectorySourceLabel('Loading NASA AROW Ephemeris...');
-            liveArowLoadPromise = initLiveArowTrajectory()
-                .then(() => {
-                    refreshTrajectoryVisuals();
-                    return liveTrajectorySamples.length >= 2;
-                })
-                .finally(() => {
-                    liveArowLoadPromise = null;
-                });
-            return liveArowLoadPromise;
+            return Promise.allSettled(tasks).then(() => {
+                setTrajectorySourceLabel(getActiveTrajectorySourceLabel());
+                return liveTrajectorySamples.length >= 2 || historicTrajectorySamples.length >= 2;
+            });
         }
 
         // ═══════════════════════════════════════════
@@ -2149,7 +2335,9 @@
         function primeEventUi(spec) {
             const select = document.getElementById('event');
             if (select) {
-                select.innerHTML = `<option value="${spec.id}">${spec.label}</option>`;
+                if (select.options.length <= 1) {
+                    select.innerHTML = `<option value="${spec.id}">${spec.label}</option>`;
+                }
                 select.value = spec.id;
             }
             document.getElementById('mission-title-text').textContent = spec.kind === 'orion' ? 'NASA · CSA' : '';
@@ -3513,6 +3701,7 @@
             const missionId = EVENT_OPTIONS.has(value) ? value : DEFAULT_EVENT_ID;
             await applyEventSpecById(missionId, { updateHash: true, focusDefaultView: true });
             if (currentEventKind === 'orion') {
+                await ensureHistoricOrionTrajectoryLoaded();
                 ensureOrionArowLoaded();
             } else {
                 setTrajectorySourceLabel('Embedded JPL Horizons Fallback');
@@ -4243,7 +4432,7 @@
                     : currentEventVehicle === 'model' && isEventView()
                     ? Math.max(420, Math.min(4200, camera.position.distanceTo(controls.target) / 70))
                     : 1;
-            const sphereVisibilityScale = activeView === 'earth-moon' ? (1.25 / 3) : 1.25;
+            const sphereVisibilityScale = activeView === 'earth-moon' ? (1.25 / 6) : 1.25;
             orionGroup.scale.setScalar(solarCraftScaleBoost);
             sphereCraftGroup.scale.setScalar(solarCraftScaleBoost * sphereVisibilityScale);
             const eventGroupScale = solarCraftScaleBoost * eventModelVisibilityScale;
@@ -4562,8 +4751,10 @@
             const initialEventId = getRequestedEventId();
             const initialSpec = await loadEventSpecById(initialEventId);
             primeEventUi(initialSpec);
-            hydrateEventMenu(initialEventId);
             await applyEventSpecById(initialEventId, { updateHash: !getHashEventValue(), focusDefaultView: false });
+            if (currentEventKind === 'orion') {
+                await ensureHistoricOrionTrajectoryLoaded();
+            }
             const now = Date.now();
             const elapsed = now - LAUNCH_TIME;
             const t = Math.max(0, Math.min(elapsed / MISSION_DURATION_MS, 1.0));
@@ -4648,6 +4839,7 @@
             updatePlaybackButton();
         }
 
+        hydrateEventMenu(INITIAL_EVENT_ID);
         animate();
         initializeApp()
             .then(() => {
