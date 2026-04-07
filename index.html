@@ -22,7 +22,7 @@
             const EVENT_IDS = new Set(Object.keys(EVENT_SPEC_FILES));
             const origin = window.location.origin || '';
             const hostname = window.location.hostname || '';
-            const useLorenProfile = hostname.includes('dream') || origin.includes('localhost:8887');
+            const useNautProfile = hostname.includes('dream') || origin.includes('localhost:8887');
             const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
             const requestedEventId = params.get('event');
             const eventId = EVENT_IDS.has(requestedEventId) ? requestedEventId : DEFAULT_EVENT_ID;
@@ -37,12 +37,18 @@
                 if (!value) return fallback;
                 return !/^(false|0|no|off)$/i.test(value);
             };
+            const isNarrowBootstrapUi = () => Math.max(window.innerWidth || 0, document.documentElement?.clientWidth || 0) <= 700;
+            const getBootstrapOverviewLabel = (label) => {
+                const nextLabel = `${label || 'Overview'}`.trim();
+                return isNarrowBootstrapUi() ? nextLabel.replace(/\s+Overview$/i, '') || nextLabel : nextLabel;
+            };
             const initialMetaTargetIds = [
                 'mission-title-text',
                 'mission-name',
                 'event',
                 'btn-overview',
                 'btn-follow',
+                'btn-sim',
                 'btn-solar-system',
                 'telemetry',
                 'event-video-wrap',
@@ -68,8 +74,8 @@
             };
 
             window.__initialEventId = eventId;
-            window.__footerProfileImageSrc = useLorenProfile ? './cadets/naut.jpg' : './cadets/javi.jpg';
-            window.__footerProfileImageAlt = useLorenProfile ? 'Loren' : 'Javi';
+            window.__footerProfileImageSrc = useNautProfile ? './cadets/naut.jpg' : './cadets/javi.jpg';
+            window.__footerProfileImageAlt = useNautProfile ? 'Naut' : 'Javi';
             window.__latestInitialEventMeta = null;
             window.__applyInitialEventMetaToDom = () => {
                 const meta = window.__latestInitialEventMeta;
@@ -79,6 +85,7 @@
                 const eventSelect = document.getElementById('event');
                 const overviewButton = document.getElementById('btn-overview');
                 const followButton = document.getElementById('btn-follow');
+                const simButton = document.getElementById('btn-sim');
                 const solarSystemButton = document.getElementById('btn-solar-system');
                 const telemetry = document.getElementById('telemetry');
                 const eventVideoWrap = document.getElementById('event-video-wrap');
@@ -86,8 +93,9 @@
 
                 if (titleEl) titleEl.textContent = meta.titleText || '';
                 if (nameEl) nameEl.textContent = meta.missionName || '';
-                if (overviewButton) overviewButton.textContent = meta.overviewLabel || 'Overview';
+                if (overviewButton) overviewButton.textContent = getBootstrapOverviewLabel(meta.overviewLabel || 'Overview');
                 if (followButton) followButton.textContent = meta.followLabel || 'Follow';
+                if (simButton && isNarrowBootstrapUi()) simButton.textContent = 'Speed 1x';
                 if (solarSystemButton) solarSystemButton.style.display = meta.showSolarSystem === false ? 'none' : '';
                 if (eventSelect) {
                     if (eventSelect.options.length <= 1) {
@@ -294,17 +302,19 @@
         }
         .timeline-pan-pad {
             display: flex;
-            gap: 6px;
+            gap: 8px;
             align-items: center;
             justify-content: flex-end;
         }
-        .timeline-pan-btn {
-            font-size: 13px;
-            line-height: 1;
+        .timeline-pan-mode-icon {
+            width: 16px;
+            height: 16px;
+            display: inline-block;
         }
-        .timeline-pan-btn[aria-label="Pan left"],
-        .timeline-pan-btn[aria-label="Pan right"] {
-            font-size: 16px;
+        .timeline-pan-mode-icon svg {
+            width: 100%;
+            height: 100%;
+            display: block;
         }
         #btn-restart-overlay {
             bottom: calc(20vh + var(--mobile-controls-footer-offset));
@@ -896,6 +906,10 @@
             height: 36px;
             font-size: 16px;
         }
+        #timeline-footer.is-active .timeline-pan-mode-icon {
+            width: 18px;
+            height: 18px;
+        }
         #timeline-footer.is-active #btn-observer-angle .hint-btn-icon {
             width: 20px;
             height: 20px;
@@ -919,6 +933,11 @@
             :root {
                 --mobile-controls-footer-offset: 96px;
             }
+            .hint-btn,
+            .hint-select,
+            .sim-opt {
+                font-size: 14.5px;
+            }
             #timeline-footer {
                 display: flex;
                 padding-top: 13px;
@@ -941,6 +960,10 @@
                 width: 36px;
                 height: 36px;
                 font-size: 16px;
+            }
+            #timeline-footer .timeline-pan-mode-icon {
+                width: 18px;
+                height: 18px;
             }
             #timeline-footer .footer-profile-link {
                 width: 40px;
@@ -1119,11 +1142,23 @@
 
     <div id="timeline-footer" aria-hidden="true">
         <div id="timeline-footer-pan-slot">
-            <div class="timeline-pan-pad" aria-label="Directional pan controls">
-                <button class="hint-btn icon-btn circle-btn timeline-pan-btn" onclick="panView(-1, 0)" aria-label="Pan left">←</button>
-                <button class="hint-btn icon-btn circle-btn timeline-pan-btn" onclick="panView(0, 1)" aria-label="Pan up">↑</button>
-                <button class="hint-btn icon-btn circle-btn timeline-pan-btn" onclick="panView(0, -1)" aria-label="Pan down">↓</button>
-                <button class="hint-btn icon-btn circle-btn timeline-pan-btn" onclick="panView(1, 0)" aria-label="Pan right">→</button>
+            <div class="timeline-pan-pad" aria-label="Camera and pan controls">
+                <button class="hint-btn icon-btn circle-btn" id="btn-observer-angle" onclick="openObserverSpecs()" aria-label="Open observer specs">
+                    <span class="hint-btn-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 8h3l1.7-2h6.6L17 8h3a2 2 0 0 1 2 2v7a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3v-7a2 2 0 0 1 2-2Z"></path>
+                            <circle cx="12" cy="13" r="4"></circle>
+                        </svg>
+                    </span>
+                </button>
+                <button class="hint-btn icon-btn circle-btn timeline-pan-btn" id="btn-pan-mode" onclick="togglePanMode()" aria-label="Enable pan mode">
+                    <span class="timeline-pan-mode-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 3v18M3 12h18"></path>
+                            <path d="M12 3l-2.5 2.5M12 3l2.5 2.5M21 12l-2.5-2.5M21 12l-2.5 2.5M12 21l-2.5-2.5M12 21l2.5-2.5M3 12l2.5-2.5M3 12l2.5 2.5"></path>
+                        </svg>
+                    </span>
+                </button>
             </div>
         </div>
         <div id="timeline-footer-center-slot">
@@ -1133,14 +1168,6 @@
         </div>
         <div id="timeline-footer-icon-slot">
             <div class="timeline-icon-row">
-                <button class="hint-btn icon-btn circle-btn" id="btn-observer-angle" onclick="openObserverSpecs()" aria-label="Open observer specs">
-                    <span class="hint-btn-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M4 8h3l1.7-2h6.6L17 8h3a2 2 0 0 1 2 2v7a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3v-7a2 2 0 0 1 2-2Z"></path>
-                            <circle cx="12" cy="13" r="4"></circle>
-                        </svg>
-                    </span>
-                </button>
                 <button class="hint-btn icon-btn circle-btn" id="btn-zoom-in" onclick="zoomIn()" aria-label="Zoom in">
                     <span class="timeline-zoom-icon plus" aria-hidden="true"></span>
                 </button>
@@ -1190,7 +1217,7 @@
                 <div class="observer-btn-row">
                     <button class="observer-btn observer-specs-toggle" id="btn-hide-observer-specs" onclick="closeObserverSpecs()">Close</button>
                     <button class="observer-btn" id="btn-copy-observer-json" onclick="copyObserverJson()">Copy JSON</button>
-                    <button class="observer-btn primary" onclick="applyObserverSpecs()">Apply View</button>
+                    <button class="observer-btn primary" onclick="applyObserverSpecs()">Apply Changes</button>
                 </div>
             </div>
         </div>
@@ -1213,14 +1240,14 @@
                     <input type="number" id="sim-custom-speed" min="1" step="1" value="4" onblur="commitCustomSpeed(event)" onkeydown="onCustomSpeedKeydown(event)" style="width:72px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.16);border-radius:8px;color:#fff;padding:6px 8px;">
                     <span style="font-size:12px;color:#9fc4db;">x</span>
                 </div>
-                <button class="sim-opt" onclick="setSpeed(1)">Speed 1x</button>
-                <button class="sim-opt" onclick="setSpeed(1000)">Speed 1,000x</button>
-                <button class="sim-opt" onclick="setSpeed(5000)">Speed 5,000x</button>
-                <button class="sim-opt" onclick="setSpeed(10000)">Speed 10,000x</button>
-                <button class="sim-opt" onclick="setSpeed(30000)">Speed 30,000x</button>
-                <button class="sim-opt" onclick="setSpeed(250000)">Speed 250,000x</button>
-                <button class="sim-opt" onclick="setSpeed(1000000)">Speed 1,000,000x</button>
-                <button class="sim-opt" onclick="setSpeed(10000000)">Speed 10,000,000x</button>
+                <button class="sim-opt" data-speed="1" onclick="setSpeed(1)">Speed 1x</button>
+                <button class="sim-opt" data-speed="1000" onclick="setSpeed(1000)">Speed 1,000x</button>
+                <button class="sim-opt" data-speed="5000" onclick="setSpeed(5000)">Speed 5,000x</button>
+                <button class="sim-opt" data-speed="10000" onclick="setSpeed(10000)">Speed 10,000x</button>
+                <button class="sim-opt" data-speed="30000" onclick="setSpeed(30000)">Speed 30,000x</button>
+                <button class="sim-opt" data-speed="250000" onclick="setSpeed(250000)">Speed 250,000x</button>
+                <button class="sim-opt" data-speed="1000000" onclick="setSpeed(1000000)">Speed 1,000,000x</button>
+                <button class="sim-opt" data-speed="10000000" onclick="setSpeed(10000000)">Speed 10,000,000x</button>
             </div>
         </div>
         <div class="sim-slider-wrap" id="sim-slider-wrap">
@@ -2158,6 +2185,20 @@
         controls.maxDistance = 1200000;
         controls.target.set(44, 0, -15);
 
+        function updatePanModeState() {
+            controls.enableRotate = !panModeActive;
+            controls.mouseButtons.LEFT = panModeActive ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE;
+            controls.mouseButtons.RIGHT = THREE.MOUSE.PAN;
+            controls.mouseButtons.MIDDLE = THREE.MOUSE.DOLLY;
+            controls.touches.ONE = panModeActive ? THREE.TOUCH.PAN : THREE.TOUCH.ROTATE;
+            controls.touches.TWO = THREE.TOUCH.DOLLY_PAN;
+            const btn = document.getElementById('btn-pan-mode');
+            if (btn) {
+                btn.classList.toggle('active', panModeActive);
+                btn.setAttribute('aria-label', panModeActive ? 'Disable pan mode' : 'Enable pan mode');
+            }
+        }
+
         const textureLoader = new THREE.TextureLoader();
         const solarSystemGroup = new THREE.Group();
         solarSystemGroup.position.copy(SOLAR_CENTER);
@@ -2985,7 +3026,7 @@
             }
             document.getElementById('mission-title-text').textContent = spec.kind === 'orion' ? 'NASA · CSA' : '';
             document.getElementById('mission-name').textContent = spec.missionName || '';
-            document.getElementById('btn-overview').textContent = spec.overviewLabel || 'Overview';
+            document.getElementById('btn-overview').textContent = getResponsiveOverviewLabel(spec.overviewLabel || 'Overview');
             document.getElementById('btn-follow').textContent = spec.followLabel || 'Follow';
             document.getElementById('btn-solar-system').style.display = spec.showSolarSystem === false ? 'none' : '';
         }
@@ -4083,11 +4124,15 @@
         let currentObserverVantagePoint = 'From Space';
         let zoomForwardAmount = 0;
         let followCraftZoomScale = 1;
+        let panModeActive = false;
         let trackedPanOffset = new THREE.Vector3();
+        let lastTrackedAutoTarget = null;
         let activeEventWorldPos = SOLAR_CENTER.clone();
         let activeEventWorldDir = new THREE.Vector3(0, 0, 1);
         let lastMoonOrbitRefreshMs = null;
         let lastMoonOrbitNormal = null;
+        let lastHudDomUpdateMs = 0;
+        let lastHudDomUpdateKey = '';
 
         function isEventView() {
             return activeView === 'event';
@@ -4272,8 +4317,17 @@
             document.getElementById('btn-follow').textContent = currentEventFollowLabel;
         }
 
+        function isNarrowUi() {
+            return getTrackerWidth() <= 700;
+        }
+
+        function getResponsiveOverviewLabel(label) {
+            const nextLabel = `${label || 'Overview'}`.trim();
+            return isNarrowUi() ? nextLabel.replace(/\s+Overview$/i, '') || nextLabel : nextLabel;
+        }
+
         function updateOverviewButtonText() {
-            document.getElementById('btn-overview').textContent = currentEventOverviewLabel;
+            document.getElementById('btn-overview').textContent = getResponsiveOverviewLabel(currentEventOverviewLabel);
         }
 
         function updateVehicleLabels() {
@@ -4872,7 +4926,13 @@
 
         function resetTrackedPanOffset() {
             trackedPanOffset.set(0, 0, 0);
+            lastTrackedAutoTarget = null;
         }
+
+        window.togglePanMode = () => {
+            panModeActive = !panModeActive;
+            updatePanModeState();
+        };
 
         window.panView = (xDir, yDir) => {
             targetPos = null;
@@ -5291,11 +5351,13 @@
             const dropdown = document.getElementById('sim-dropdown');
             const isOpen = dropdown.classList.toggle('open');
             if (isOpen) {
-                requestAnimationFrame(() => {
-                    const input = document.getElementById('sim-custom-speed');
-                    input?.focus();
-                    input?.select();
-                });
+                if (getTrackerWidth() > 700) {
+                    requestAnimationFrame(() => {
+                        const input = document.getElementById('sim-custom-speed');
+                        input?.focus();
+                        input?.select();
+                    });
+                }
             }
         };
 
@@ -5311,8 +5373,25 @@
             return Math.round(1 + 99 * Math.log(spd / MIN_SIM_SPEED) / Math.log(MAX_SIM_SPEED / MIN_SIM_SPEED));
         }
 
+        function formatCompactSpeedValue(spd) {
+            if (spd >= 1000000) {
+                const millions = spd / 1000000;
+                return `${Number.isInteger(millions) ? millions : millions.toFixed(1).replace(/\.0$/, '')}M`;
+            }
+            if (spd >= 1000) {
+                const thousands = spd / 1000;
+                return `${Number.isInteger(thousands) ? thousands : thousands.toFixed(1).replace(/\.0$/, '')}K`;
+            }
+            return `${Math.round(spd)}`;
+        }
+
         function formatSpeedLabel(spd) {
-            return `Model Speed ${spd.toLocaleString()}x`;
+            const prefix = isNarrowUi() ? 'Speed' : 'Model Speed';
+            if (isNarrowUi()) {
+                return `${prefix} ${formatCompactSpeedValue(spd)}`;
+            }
+            const speedText = Math.round(spd).toLocaleString();
+            return `${prefix} ${speedText}x`;
         }
 
         function getCustomSpeedValue() {
@@ -5330,7 +5409,18 @@
         }
 
         function getSpeedButtonLabel() {
-            return speedMult > 1 ? formatSpeedLabel(speedMult) : 'Model Speed 1x';
+            return speedMult > 1 ? formatSpeedLabel(speedMult) : (isNarrowUi() ? 'Speed 1x' : 'Model Speed 1x');
+        }
+
+        function refreshSpeedOptionLabels() {
+            document.querySelectorAll('.sim-opt[data-speed]').forEach((button) => {
+                const spd = Number(button.dataset.speed || 1);
+                if (isNarrowUi()) {
+                    button.textContent = spd <= 1 ? 'Speed 1x' : `Speed ${formatCompactSpeedValue(spd)}`;
+                    return;
+                }
+                button.textContent = `Speed ${Math.round(spd).toLocaleString()}x`;
+            });
         }
 
         let resetButtonTimer = null;
@@ -5368,6 +5458,7 @@
             simBtn.textContent = getSpeedButtonLabel();
             sliderWrap.classList.add('visible');
             slider.value = speedMult > 1 ? speedToSlider(speedMult) : '0';
+            refreshSpeedOptionLabels();
             syncCustomSpeedField();
         }
 
@@ -5655,6 +5746,8 @@
                 setTimelineDateEditorOpen(false);
             }
         });
+
+        updatePanModeState();
 
         // ═══════════════════════════════════════════
         // ANIMATION LOOP
@@ -6294,6 +6387,15 @@
 
             // After transition, continuously track targets (direct copy, no lerp = no fighting)
             if (!targetPos) {
+                const isTrackedPanMode =
+                    panModeActive &&
+                    (cameraMode === 'follow-orion' || cameraMode === 'focus-earth' || cameraMode === 'focus-moon' || cameraMode === 'earth-moon' || cameraMode === 'event');
+                if (isTrackedPanMode && lastTrackedAutoTarget) {
+                    const panDelta = controls.target.clone().sub(lastTrackedAutoTarget);
+                    if (panDelta.lengthSq() > 1e-8) {
+                        trackedPanOffset.add(panDelta);
+                    }
+                }
                 if (cameraMode === 'follow-orion') {
                     const activeCraft = getGroupWorldPosition(getEventVehicleGroup());
                     if (currentEventKind === 'orion' || !currentEventFollowCamera) {
@@ -6341,6 +6443,14 @@
             }
 
             controls.update();
+            if (cameraMode === 'follow-orion' || cameraMode === 'focus-earth' || cameraMode === 'focus-moon' || cameraMode === 'earth-moon' || cameraMode === 'event') {
+                if (!lastTrackedAutoTarget) {
+                    lastTrackedAutoTarget = new THREE.Vector3();
+                }
+                lastTrackedAutoTarget.copy(controls.target);
+            } else {
+                lastTrackedAutoTarget = null;
+            }
             if (activeView === 'solar-system') {
                 starBackgroundGroup.position.lerp(SOLAR_CENTER, 0.12);
             } else {
@@ -6384,34 +6494,50 @@
             const distMoonEl = document.getElementById('dist-moon');
             const velocityEl = document.getElementById('velocity');
             const missionDayEl = document.getElementById('mission-day');
+            const hudDomUpdateKey = [
+                currentEventId,
+                activeView,
+                cameraMode,
+                paused ? 'paused' : 'running',
+                scrubbing ? 'scrubbing' : 'steady',
+                telemetryDistanceToggleShowsMoon ? 'moon' : 'earth'
+            ].join('|');
+            const hudDomNow = Date.now();
+            const shouldUpdateHudDom = hudDomUpdateKey !== lastHudDomUpdateKey || (hudDomNow - lastHudDomUpdateMs) >= 250;
+            if (shouldUpdateHudDom) {
+                lastHudDomUpdateKey = hudDomUpdateKey;
+                lastHudDomUpdateMs = hudDomNow;
+            }
 
             // Human-readable date/time in user's timezone
             const missionDate = new Date(LAUNCH_TIME + hudElapsedMs);
             const solarDateValue = msToDateInputValue(solarDateMs);
-            if (solarDateValue !== lastPlanetDateInputValue) {
+            if (shouldUpdateHudDom && solarDateValue !== lastPlanetDateInputValue) {
                 setValueIfChanged(planetDateInputEl, solarDateValue);
                 lastPlanetDateInputValue = solarDateValue;
             }
 
-            if (activeView === 'solar-system' || isEventView()) {
-                setTextIfChanged(timelineTitleTextEl, 'Planet Date');
-                setTextIfChanged(metDisplayEl, solarDate.toLocaleDateString(undefined, {
-                    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC'
-                }));
-            } else {
-                const dateStr = missionDate.toLocaleDateString(undefined, {
-                    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
-                });
-                const timeStr = missionDate.toLocaleTimeString(undefined, {
-                    hour: '2-digit', minute: '2-digit', hour12: false
-                });
-                setTextIfChanged(timelineTitleTextEl, 'Mission Time');
-                setTextIfChanged(metDisplayEl, `${dateStr}, ${timeStr}`);
+            if (shouldUpdateHudDom) {
+                if (activeView === 'solar-system' || isEventView()) {
+                    setTextIfChanged(timelineTitleTextEl, 'Planet Date');
+                    setTextIfChanged(metDisplayEl, solarDate.toLocaleDateString(undefined, {
+                        weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC'
+                    }));
+                } else {
+                    const dateStr = missionDate.toLocaleDateString(undefined, {
+                        weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
+                    });
+                    const timeStr = missionDate.toLocaleTimeString(undefined, {
+                        hour: '2-digit', minute: '2-digit', hour12: false
+                    });
+                    setTextIfChanged(timelineTitleTextEl, 'Mission Time');
+                    setTextIfChanged(metDisplayEl, `${dateStr}, ${timeStr}`);
+                }
+                setTextIfChanged(missionNameEl, currentEventName);
             }
-            setTextIfChanged(missionNameEl, currentEventName);
 
             // Update timeline slider (only when not being dragged)
-            if (!scrubbing) {
+            if (shouldUpdateHudDom && !scrubbing) {
                 const sliderVal = isEventTimelineView()
                     ? missionProgress * 10000
                     : Math.max(0, (hudDay - TLI_DAY) / (MISSION_DAYS - TLI_DAY)) * 10000;
@@ -6421,23 +6547,25 @@
             const pct = isEventTimelineView()
                 ? Math.max(0, Math.min(100, missionProgress * 100))
                 : Math.max(0, Math.min(100, (hudDay - TLI_DAY) / (MISSION_DAYS - TLI_DAY) * 100));
-            setStyleIfChanged(
-                timelineSliderEl,
-                'background',
-                `linear-gradient(90deg, #ff6b35 0%, #6ec6ff ${pct}%, rgba(255,255,255,0.08) ${pct}%)`
-            );
-            if (isEventTimelineView() && currentEventKind === 'mars') {
-                setStyleIfChanged(arriveMarkerEl, 'left', `${marsArrivalProgress * 100}%`);
-                setStyleIfChanged(departMarkerEl, 'left', `${marsDepartProgress * 100}%`);
-                toggleClassIfChanged(arriveMarkerEl, 'visible', true);
-                toggleClassIfChanged(departMarkerEl, 'visible', true);
-            } else {
-                toggleClassIfChanged(arriveMarkerEl, 'visible', false);
-                toggleClassIfChanged(departMarkerEl, 'visible', false);
+            if (shouldUpdateHudDom) {
+                setStyleIfChanged(
+                    timelineSliderEl,
+                    'background',
+                    `linear-gradient(90deg, #ff6b35 0%, #6ec6ff ${pct}%, rgba(255,255,255,0.08) ${pct}%)`
+                );
+                if (isEventTimelineView() && currentEventKind === 'mars') {
+                    setStyleIfChanged(arriveMarkerEl, 'left', `${marsArrivalProgress * 100}%`);
+                    setStyleIfChanged(departMarkerEl, 'left', `${marsDepartProgress * 100}%`);
+                    toggleClassIfChanged(arriveMarkerEl, 'visible', true);
+                    toggleClassIfChanged(departMarkerEl, 'visible', true);
+                } else {
+                    toggleClassIfChanged(arriveMarkerEl, 'visible', false);
+                    toggleClassIfChanged(departMarkerEl, 'visible', false);
+                }
             }
 
             // Phase labels
-            if (currentEventKind === 'mars') {
+            if (shouldUpdateHudDom && currentEventKind === 'mars') {
                 const labels = currentEventPhaseLabels || ['Depart', '', 'Arrive Mars', 'Stay', 'Depart Mars', 'Return'];
                 [
                     ['pl-launch', labels[0] || 'Depart', 0, 0.03],
@@ -6453,7 +6581,7 @@
                 });
                 setStyleIfChanged(document.getElementById('pl-transit'), 'transform', 'translateX(-20px)');
                 setStyleIfChanged(document.getElementById('pl-flyby'), 'transform', 'translateX(-10px)');
-            } else if (currentEventKind !== 'orion') {
+            } else if (shouldUpdateHudDom && currentEventKind !== 'orion') {
                 const labels = currentEventPhaseLabels || ['Launch', 'Phase 2', 'Phase 3', 'Phase 4', 'Phase 5', 'Complete'];
                 const boundaries = [0, 1 / 6, 2 / 6, 3 / 6, 4 / 6, 5 / 6, 1.0001];
                 ['pl-launch', 'pl-tli', 'pl-transit', 'pl-flyby', 'pl-return', 'pl-reentry'].forEach((id, index) => {
@@ -6463,7 +6591,7 @@
                 });
                 setStyleIfChanged(document.getElementById('pl-transit'), 'transform', '');
                 setStyleIfChanged(document.getElementById('pl-flyby'), 'transform', '');
-            } else {
+            } else if (shouldUpdateHudDom) {
                 [['pl-launch','Launch',0,0.106],['pl-tli','TLI',0.106,0.15],['pl-transit','Transit',0.15,0.53],
                  ['pl-flyby','Flyby',0.53,0.63],['pl-return','Return',0.63,0.95],['pl-reentry','Entry',0.95,1]
                 ].forEach(([id, label, start, end]) => {
@@ -6498,7 +6626,9 @@
                 else if (hudDay < 9.5) phase = 'Return Transit';
                 else if (hudDay < 10) phase = 'Re-entry';
             }
-            setTextIfChanged(phaseTextEl, phase);
+            if (shouldUpdateHudDom) {
+                setTextIfChanged(phaseTextEl, phase);
+            }
 
             // MET counter
             const metMs = isEventTimelineView()
@@ -6508,10 +6638,12 @@
             const metH = Math.floor((metMs % MS_PER_DAY) / 3600000);
             const metM = Math.floor((metMs % 3600000) / 60000);
             const metS = Math.floor((metMs % 60000) / 1000);
-            setTextIfChanged(
-                metCounterEl,
-                `T+${String(metD).padStart(2,'0')}:${String(metH).padStart(2,'0')}:${String(metM).padStart(2,'0')}:${String(metS).padStart(2,'0')}`
-            );
+            if (shouldUpdateHudDom) {
+                setTextIfChanged(
+                    metCounterEl,
+                    `T+${String(metD).padStart(2,'0')}:${String(metH).padStart(2,'0')}:${String(metM).padStart(2,'0')}:${String(metS).padStart(2,'0')}`
+                );
+            }
 
             // Distances
             const activeCraftWorld = currentEventKind === 'orion' ? orionWorld : activeEventWorldPos;
@@ -6521,8 +6653,10 @@
             const formattedMoonDistance = formatKm(dMoon);
             const showMoonInPrimaryDistanceSlot = telemetryDistanceToggleShowsMoon && getTrackerWidth() <= 500;
 
-            setTextIfChanged(distEarthEl, showMoonInPrimaryDistanceSlot ? formattedMoonDistance : formattedEarthDistance);
-            setTextIfChanged(distMoonEl, formattedMoonDistance);
+            if (shouldUpdateHudDom) {
+                setTextIfChanged(distEarthEl, showMoonInPrimaryDistanceSlot ? formattedMoonDistance : formattedEarthDistance);
+                setTextIfChanged(distMoonEl, formattedMoonDistance);
+            }
 
             // Velocity
             const velStep = 0.002;
@@ -6533,16 +6667,20 @@
                 ? samplePathPoints(missionRoutePointsWorld, Math.max(0, missionProgressT - velStep))
                 : activeEventWorldPos.clone();
             const vel = activeCraftWorld.distanceTo(prevCraftWorld) / SCALE / (velStep * 86400);
-            setTextIfChanged(velocityEl, vel.toFixed(2));
+            if (shouldUpdateHudDom) {
+                setTextIfChanged(velocityEl, vel.toFixed(2));
+            }
 
             // Mission day
-            setTextIfChanged(
-                missionDayEl,
-                isEventTimelineView()
-                    ? `Day ${Math.floor(missionDay) + 1} of ${Math.max(1, Math.round((currentEventEndMs - currentEventStartMs) / MS_PER_DAY))}`
-                    : `Day ${Math.floor(hudDay) + 1} of ${Math.round(MISSION_DAYS)}`
-            );
-            setTelemetryReadyIfPopulated();
+            if (shouldUpdateHudDom) {
+                setTextIfChanged(
+                    missionDayEl,
+                    isEventTimelineView()
+                        ? `Day ${Math.floor(missionDay) + 1} of ${Math.max(1, Math.round((currentEventEndMs - currentEventStartMs) / MS_PER_DAY))}`
+                        : `Day ${Math.floor(hudDay) + 1} of ${Math.round(MISSION_DAYS)}`
+                );
+                setTelemetryReadyIfPopulated();
+            }
 
             const currentEventComplete = currentEventDisableCompletion
                 ? false
@@ -6579,6 +6717,8 @@
             renderer.setSize(getTrackerWidth(), getTrackerHeight());
             composer.setSize(getTrackerWidth(), getTrackerHeight());
             syncMobileControlsFooter();
+            updateOverviewButtonText();
+            refreshSpeedControls();
         }
 
         window.addEventListener('resize', updateTrackerLayoutSize);
