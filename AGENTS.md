@@ -7,6 +7,10 @@ This repo is a config-driven space/event tracker centered on `index.html`.
 - Define event-specific content in `events/`, not in hardcoded branches when config can express it.
 - Put reusable 3D assets in `spacecraft/`.
 
+## Timing — Apply Cached State Without Waiting for DOM Load
+
+When restoring persisted UI state (e.g. localStorage), do **not** use `DOMContentLoaded` or `setTimeout`. Instead, place the inline `<script>` immediately after the HTML element it targets. The element already exists in the DOM at that point, so the call is synchronous and flash-free. If the script must live elsewhere, poll for the element with `requestAnimationFrame` rather than deferring to a document-level event.
+
 ## Preferred Patterns
 - Prefer generic event logic over one-off event code.
 - Use the URL hash for state such as `event` and `focus`, and preserve unrelated hash keys when updating one value.

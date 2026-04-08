@@ -481,7 +481,7 @@
             background: rgba(255,255,255,0.11);
             color: #fff;
         }
-        .observer-btn.sim-active {
+        .observer-btn.speed-active {
             background: rgba(255,107,53,0.16);
             border-color: rgba(255,107,53,0.3);
             color: #ff9a70;
@@ -570,7 +570,7 @@
         .hint-btn.active {
             background: rgba(110,198,255,0.12); border-color: rgba(110,198,255,0.25); color: #6ec6ff;
         }
-        .hint-btn.sim-active {
+        .hint-btn.speed-active {
             background: rgba(255,107,53,0.15); border-color: rgba(255,107,53,0.3); color: #ff8855;
         }
         .circle-btn,
@@ -612,38 +612,38 @@
             border-color: rgba(255,255,255,0.18);
             color: #fff;
         }
-        .sim-group { position: relative; }
-        .sim-dropdown {
+        .speed-group { position: relative; }
+        .speed-dropdown {
             display: none; position: absolute; right: 0; top: 100%; margin-top: 4px;
             background: rgba(10,12,20,0.85); border: 1px solid rgba(255,255,255,0.1);
             border-radius: 8px; overflow: hidden; min-width: 80px;
             z-index: 100;
             backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
         }
-        .sim-dropdown.open { display: block; }
-        .sim-opt {
+        .speed-dropdown.open { display: block; }
+        .speed-opt {
             display: block; width: 100%; padding: 8px 14px; border: none;
             background: transparent; color: rgba(255,255,255,0.6); font-size: 11px;
             font-weight: 500; font-family: 'Inter', sans-serif; cursor: pointer;
             text-align: right; transition: all 0.2s;
         }
-        .sim-opt:hover { background: rgba(255,107,53,0.15); color: #ff8855; }
-        .sim-slider-wrap {
+        .speed-opt:hover { background: rgba(255,107,53,0.15); color: #ff8855; }
+        .speed-slider-wrap {
             display: flex; align-items: center; gap: 0; margin-top: 4px;
             pointer-events: auto; width: 100%;
         }
-        .sim-slider-wrap.visible { display: flex; }
-        .sim-slider-wrap input[type="range"] {
+        .speed-slider-wrap.visible { display: flex; }
+        .speed-slider-wrap input[type="range"] {
             -webkit-appearance: none; appearance: none;
             width: 100%; height: 3px; background: rgba(255,255,255,0.15);
             border-radius: 2px; outline: none; cursor: pointer;
         }
-        .sim-slider-wrap input[type="range"]::-webkit-slider-thumb {
+        .speed-slider-wrap input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none; appearance: none;
             width: 10px; height: 16px; border-radius: 2px;
             background: rgba(192,196,206,0.95); cursor: pointer; border: none;
         }
-        .sim-slider-wrap input[type="range"]::-moz-range-thumb {
+        .speed-slider-wrap input[type="range"]::-moz-range-thumb {
             width: 10px; height: 16px; border-radius: 2px;
             background: rgba(192,196,206,0.95); cursor: pointer; border: none;
         }
@@ -875,25 +875,25 @@
         <button class="hint-btn" id="btn-earth" onclick="focusEarth()">Focus Earth</button>
         <button class="hint-btn" id="btn-moon" onclick="focusMoon()">Focus Moon</button>
         <button class="hint-btn" id="btn-solar-system" onclick="focusSolarSystem()">Solar System</button>
-        <div class="sim-group">
-            <button class="hint-btn sim-active" id="btn-sim" onclick="toggleSimMenu()">Model Speed 1x</button>
-            <div class="sim-dropdown" id="sim-dropdown">
-                <div class="sim-opt" style="display:flex;align-items:center;gap:8px;">
-                    <input type="number" id="sim-custom-speed" min="1" step="1" value="4" onblur="commitCustomSpeed()" onkeydown="onCustomSpeedKeydown(event)" style="width:72px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.16);border-radius:8px;color:#fff;padding:6px 8px;">
+        <div class="speed-group">
+            <button class="hint-btn speed-active" id="btn-speed" onclick="toggleSimMenu()">Model Speed 1x</button>
+            <div class="speed-dropdown" id="speed-dropdown">
+                <div class="speed-opt" style="display:flex;align-items:center;gap:8px;">
+                    <input type="number" id="speed-custom-speed" min="1" step="1" value="4" onblur="commitCustomSpeed()" onkeydown="onCustomSpeedKeydown(event)" style="width:72px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.16);border-radius:8px;color:#fff;padding:6px 8px;">
                     <span style="font-size:12px;color:#9fc4db;">x</span>
                 </div>
-                <button class="sim-opt" onclick="setSpeed(1)">Speed 1x</button>
-                <button class="sim-opt" onclick="setSpeed(1000)">Speed 1,000x</button>
-                <button class="sim-opt" onclick="setSpeed(5000)">Speed 5,000x</button>
-                <button class="sim-opt" onclick="setSpeed(10000)">Speed 10,000x</button>
-                <button class="sim-opt" onclick="setSpeed(30000)">Speed 30,000x</button>
-                <button class="sim-opt" onclick="setSpeed(250000)">Speed 250,000x</button>
-                <button class="sim-opt" onclick="setSpeed(1000000)">Speed 1,000,000x</button>
-                <button class="sim-opt" onclick="setSpeed(10000000)">Speed 10,000,000x</button>
+                <button class="speed-opt" onclick="setSpeed(1)">Speed 1x</button>
+                <button class="speed-opt" onclick="setSpeed(1000)">Speed 1,000x</button>
+                <button class="speed-opt" onclick="setSpeed(5000)">Speed 5,000x</button>
+                <button class="speed-opt" onclick="setSpeed(10000)">Speed 10,000x</button>
+                <button class="speed-opt" onclick="setSpeed(30000)">Speed 30,000x</button>
+                <button class="speed-opt" onclick="setSpeed(250000)">Speed 250,000x</button>
+                <button class="speed-opt" onclick="setSpeed(1000000)">Speed 1,000,000x</button>
+                <button class="speed-opt" onclick="setSpeed(10000000)">Speed 10,000,000x</button>
             </div>
         </div>
-        <div class="sim-slider-wrap" id="sim-slider-wrap">
-            <input type="range" id="sim-slider" min="0" max="100" value="0"
+        <div class="speed-slider-wrap" id="speed-slider-wrap">
+            <input type="range" id="speed-slider" min="0" max="100" value="0"
                    oninput="onSliderChange(this.value)">
         </div>
         <div class="timeline-icon-row">
@@ -3830,12 +3830,12 @@
         function pulseObserverControl(elementId) {
             const el = document.getElementById(elementId);
             if (!el) return;
-            el.classList.add('sim-active');
+            el.classList.add('speed-active');
             if (observerAngleResetTimeout !== null) {
                 clearTimeout(observerAngleResetTimeout);
             }
             observerAngleResetTimeout = window.setTimeout(() => {
-                el.classList.remove('sim-active');
+                el.classList.remove('speed-active');
                 observerAngleResetTimeout = null;
             }, 1200);
         }
@@ -4212,7 +4212,7 @@
             const isPausedState = paused || scrubDay !== null || scrubSolarDateMs !== null;
             icon.innerHTML = isPausedState ? '&#9654;' : '&#10074;&#10074;';
             btn.setAttribute('aria-label', isPausedState ? 'Play playback' : 'Pause playback');
-            btn.classList.toggle('sim-active', isPausedState);
+            btn.classList.toggle('speed-active', isPausedState);
             btn.classList.toggle('is-playing', !isPausedState);
         }
 
@@ -4267,7 +4267,7 @@
             scrubSolarDateMs = null;
             solarBaseDateMs = getEventDateMs(0);
             lastPlanetDateInputValue = '';
-            document.getElementById('sim-dropdown').classList.remove('open');
+            document.getElementById('speed-dropdown').classList.remove('open');
             refreshSpeedControls();
             updatePlaybackButton();
             const slider = document.getElementById('timeline-slider');
@@ -4286,7 +4286,7 @@
             scrubDay = null;
             scrubSolarDateMs = null;
             zoomForwardAmount = 0;
-            document.getElementById('sim-dropdown').classList.remove('open');
+            document.getElementById('speed-dropdown').classList.remove('open');
             refreshSpeedControls();
             updatePlaybackButton();
             if (currentEventKind === 'orion') {
@@ -4569,7 +4569,7 @@
 
         // Accelerate time
         window.toggleSimMenu = () => {
-            document.getElementById('sim-dropdown').classList.toggle('open');
+            document.getElementById('speed-dropdown').classList.toggle('open');
         };
 
         // Slider maps 0 → 1x, then 1-100 → MIN_SIM_SPEED to MAX_SIM_SPEED (exponential)
@@ -4589,13 +4589,13 @@
         }
 
         function getCustomSpeedValue() {
-            const input = document.getElementById('sim-custom-speed');
+            const input = document.getElementById('speed-custom-speed');
             const parsed = Math.round(Number(input?.value) || 4);
             return Math.max(1, parsed);
         }
 
         function syncCustomSpeedField() {
-            const input = document.getElementById('sim-custom-speed');
+            const input = document.getElementById('speed-custom-speed');
             if (!input) return;
             const nextValue = String(Math.max(1, Math.round(speedMult || 1)));
             input.value = nextValue;
@@ -4633,11 +4633,11 @@
         }
 
         function refreshSpeedControls() {
-            const simBtn = document.getElementById('btn-sim');
-            const sliderWrap = document.getElementById('sim-slider-wrap');
-            const slider = document.getElementById('sim-slider');
+            const simBtn = document.getElementById('btn-speed');
+            const sliderWrap = document.getElementById('speed-slider-wrap');
+            const slider = document.getElementById('speed-slider');
 
-            simBtn.classList.add('sim-active');
+            simBtn.classList.add('speed-active');
             simBtn.textContent = getSpeedButtonLabel();
             sliderWrap.classList.add('visible');
             slider.value = speedMult > 1 ? speedToSlider(speedMult) : '0';
@@ -4646,7 +4646,7 @@
 
         window.setSpeed = (spd) => {
             if (spd <= 1) {
-                document.getElementById('sim-dropdown').classList.remove('open');
+                document.getElementById('speed-dropdown').classList.remove('open');
                 resetRealTime();
                 return;
             }
@@ -4660,14 +4660,14 @@
             pausedDay = null;
             pausedSolarDateMs = null;
             speedMult = spd;
-            document.getElementById('sim-dropdown').classList.remove('open');
+            document.getElementById('speed-dropdown').classList.remove('open');
             refreshSpeedControls();
             showResetButtonTemporarily();
             updatePlaybackButton();
         };
 
         window.commitCustomSpeed = () => {
-            const input = document.getElementById('sim-custom-speed');
+            const input = document.getElementById('speed-custom-speed');
             if (!input) return;
             const nextValue = String(getCustomSpeedValue());
             if (input.dataset.lastApplied === nextValue) return;
@@ -4781,7 +4781,7 @@
             const progressTrack = document.getElementById('progress-track');
             const timelineBar = document.querySelector('.timeline-bar');
             const planetDateInput = document.getElementById('planet-date-input');
-            const simSlider = document.getElementById('sim-slider');
+            const simSlider = document.getElementById('speed-slider');
             if (slider) {
                 slider.addEventListener('pointerup', () => { scrubbing = false; });
                 slider.addEventListener('touchend', () => { scrubbing = false; });
@@ -4837,8 +4837,8 @@
 
         // Close dropdown on outside click
         document.addEventListener('click', (e) => {
-            if (!e.target.closest('.sim-group')) {
-                document.getElementById('sim-dropdown').classList.remove('open');
+            if (!e.target.closest('.speed-group')) {
+                document.getElementById('speed-dropdown').classList.remove('open');
             }
             if (timelineDateEditorOpen && !e.target.closest('#timeline-met-wrap')) {
                 setTimelineDateEditorOpen(false);

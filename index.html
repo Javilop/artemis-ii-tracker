@@ -23,6 +23,7 @@
             const origin = window.location.origin || '';
             const hostname = window.location.hostname || '';
             const useNautProfile = hostname.includes('dream') || origin.includes('localhost:8887');
+            const useModelEarth = hostname.includes('model.earth');
             const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
             const requestedEventId = params.get('event');
             const eventId = EVENT_IDS.has(requestedEventId) ? requestedEventId : DEFAULT_EVENT_ID;
@@ -48,7 +49,7 @@
                 'event',
                 'btn-overview',
                 'btn-follow',
-                'btn-sim',
+                'btn-speed',
                 'btn-solar-system',
                 'telemetry',
                 'event-video-wrap',
@@ -74,8 +75,8 @@
             };
 
             window.__initialEventId = eventId;
-            window.__footerProfileImageSrc = useNautProfile ? './cadets/naut.jpg' : './cadets/javi.jpg';
-            window.__footerProfileImageAlt = useNautProfile ? 'Naut' : 'Javi';
+            window.__footerProfileImageSrc = useModelEarth ? 'https://model.earth/localsite/img/logo/modelearth/model-earth.png' : useNautProfile ? './cadets/naut.jpg' : './cadets/javi.jpg';
+            window.__footerProfileImageAlt = useModelEarth ? 'model.earth' : useNautProfile ? 'Naut' : 'Javi';
             window.__latestInitialEventMeta = null;
             window.__applyInitialEventMetaToDom = () => {
                 const meta = window.__latestInitialEventMeta;
@@ -85,7 +86,7 @@
                 const eventSelect = document.getElementById('event');
                 const overviewButton = document.getElementById('btn-overview');
                 const followButton = document.getElementById('btn-follow');
-                const simButton = document.getElementById('btn-sim');
+                const simButton = document.getElementById('btn-speed');
                 const solarSystemButton = document.getElementById('btn-solar-system');
                 const telemetry = document.getElementById('telemetry');
                 const eventVideoWrap = document.getElementById('event-video-wrap');
@@ -95,7 +96,7 @@
                 if (nameEl) nameEl.textContent = meta.missionName || '';
                 if (overviewButton) overviewButton.textContent = getBootstrapOverviewLabel(meta.overviewLabel || 'Overview');
                 if (followButton) followButton.textContent = meta.followLabel || 'Follow';
-                if (simButton && isNarrowBootstrapUi()) simButton.textContent = 'Speed 1x';
+                if (simButton) simButton.textContent = 'Model Speed 1x';
                 if (solarSystemButton) solarSystemButton.style.display = meta.showSolarSystem === false ? 'none' : '';
                 if (eventSelect) {
                     if (eventSelect.options.length <= 1) {
@@ -307,8 +308,8 @@
             justify-content: flex-end;
         }
         .timeline-pan-mode-icon {
-            width: 16px;
-            height: 16px;
+            width: 20px;
+            height: 20px;
             display: inline-block;
         }
         .timeline-pan-mode-icon svg {
@@ -362,7 +363,6 @@
             justify-content: center;
             width: 14px;
             height: 14px;
-            font-size: 13px;
             line-height: 1;
             color: rgba(255,255,255,0.82);
         }
@@ -549,6 +549,40 @@
         #observer-specs-advanced.open {
             display: block;
         }
+        #observer-specs-summary {
+            margin: 10px 0 14px;
+        }
+        .obs-spec-row {
+            display: flex;
+            justify-content: flex-start;
+            align-items: flex-start;
+            padding: 6px 0;
+            gap: 10px;
+        }
+        .obs-spec-label {
+            font-size: 13px;
+            font-weight: 700;
+            color: rgba(255,255,255,0.52);
+            text-align: left;
+            white-space: nowrap;
+            min-width: 100px;
+        }
+        .obs-spec-value {
+            color: rgba(255,255,255,0.82);
+            font-size: 13px;
+            font-weight: 400;
+            text-align: left;
+        }
+        .obs-spec-note {
+            font-size: 11px;
+            color: rgba(255,255,255,0.38);
+            margin-left: 6px;
+            line-height: 1.4;
+            display: inline;
+        }
+        #observerSpecs.editor-open #observer-specs-summary {
+            display: none;
+        }
         .observer-note-wrap {
             margin-bottom: 10px;
         }
@@ -591,7 +625,7 @@
             background: rgba(255,255,255,0.11);
             color: #fff;
         }
-        .observer-btn.sim-active {
+        .observer-btn.speed-active {
             background: rgba(255,107,53,0.16);
             border-color: rgba(255,107,53,0.3);
             color: #ff9a70;
@@ -654,11 +688,25 @@
             font-size: 8px; font-weight: 600; color: rgba(255,255,255,0.2); letter-spacing: 0.5px;
         }
         .phase-label.active { color: #6ec6ff; }
+        #timeline.is-narrow .phase-label { font-size: 10px; }
 
         #controls-hint {
-            position: absolute; top: 28px; right: 32px; z-index: 110;
+            position: absolute; top: 28px; right: 38px; z-index: 110;
             pointer-events: auto; display: flex; flex-direction: column;
             gap: 5px; align-items: flex-end;
+        }
+        #controls-hint-toggle {
+            position: absolute; top: 28px; right: 8px; z-index: 111;
+            background: none; border: none; cursor: pointer;
+            color: rgba(255,255,255,0.5); padding: 4px;
+            pointer-events: auto; display: flex; align-items: center; justify-content: center;
+            transition: color 0.2s;
+        }
+        #controls-hint-toggle:hover { color: #fff; }
+        #controls-hint-toggle svg { width: 16px; height: 15px; display: block; }
+        #controls-hint-body,
+        #controls-hint-collapsible {
+            display: flex; flex-direction: column; gap: 5px; align-items: flex-end;
         }
         .hint-btn {
             background: rgba(10,12,20,0.6); border: 1px solid rgba(255,255,255,0.1);
@@ -680,7 +728,7 @@
         .hint-btn.active {
             background: rgba(110,198,255,0.12); border-color: rgba(110,198,255,0.25); color: #6ec6ff;
         }
-        .hint-btn.sim-active {
+        .hint-btn.speed-active {
             background: rgba(255,107,53,0.15); border-color: rgba(255,107,53,0.3); color: #ff8855;
         }
         .circle-btn,
@@ -695,19 +743,21 @@
             border-radius: 50%;
             position: static;
         }
+        #timeline-pan-home .circle-btn,
+        #timeline-pan-home .timeline-pan-btn,
+        #timeline-icon-home .circle-btn {
+            width: 32px;
+            height: 32px;
+        }
         .hint-select-wrap {
-            min-width: 135px;
-            width: 135px;
-            display: flex;
-            flex-direction: column;
-            align-items: stretch;
+            min-width: 135px; width: 135px;
+            display: flex; flex-direction: column; align-items: stretch;
         }
         .hint-select {
             background: rgba(10,12,20,0.6);
             border: 1px solid rgba(255,255,255,0.1);
             border-radius: 8px;
             padding: 7px 12px;
-            min-width: 135px;
             color: rgba(255,255,255,0.7);
             font-size: 11px;
             font-weight: 600;
@@ -726,40 +776,58 @@
             border-color: rgba(255,255,255,0.18);
             color: #fff;
         }
-        .sim-group { position: relative; }
-        .sim-dropdown {
-            display: none; position: absolute; right: 0; top: 100%; margin-top: 4px;
+        .speed-group { position: relative; }
+        .speed-card {
+            background: rgba(10,12,20,0.6); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px; padding: 7px 14px; width: 135px; box-sizing: border-box;
+            backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+        }
+        .speed-card-header {
+            display: block; width: 100%; background: transparent; border: none;
+            color: rgba(255,255,255,0.75); font-size: 12px; font-weight: 500;
+            font-family: 'Inter', sans-serif; cursor: pointer; text-align: center;
+            padding: 2px 0 4px; transition: color 0.2s;
+        }
+        .speed-card-header { font-size: 11px; }
+        .speed-card-header:hover { color: #fff; }
+        .speed-card-header.speed-active { color: #ff8855; }
+        .speed-card:has(.speed-card-header.speed-active) { background: rgba(255,107,53,0.15); border-color: rgba(255,107,53,0.3); }
+        .sim-paused .speed-card-header.speed-active { color: rgba(255,255,255,0.75); }
+        .sim-paused .speed-card:has(.speed-card-header.speed-active) { background: rgba(10,12,20,0.6); border-color: rgba(255,255,255,0.1); }
+        .sim-paused .speed-slider-wrap input[type="range"]::-webkit-slider-thumb { background: #ff8855; }
+        .sim-paused .speed-slider-wrap input[type="range"]::-moz-range-thumb { background: #ff8855; }
+        .speed-dropdown {
+            display: none; position: absolute; right: 0; top: 100%; margin-top: 6px;
             background: rgba(10,12,20,0.85); border: 1px solid rgba(255,255,255,0.1);
             border-radius: 8px; overflow: hidden; min-width: 80px;
             z-index: 100;
             backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
         }
-        .sim-dropdown.open { display: block; }
-        .sim-opt {
+        .speed-dropdown.open { display: block; }
+        .speed-opt {
             display: block; width: 100%; padding: 8px 14px; border: none;
             background: transparent; color: rgba(255,255,255,0.6); font-size: 11px;
             font-weight: 500; font-family: 'Inter', sans-serif; cursor: pointer;
             text-align: right; transition: all 0.2s;
         }
-        .sim-opt:hover { background: rgba(255,107,53,0.15); color: #ff8855; }
-        .sim-slider-wrap {
-            display: flex; align-items: center; gap: 0; margin-top: 4px;
-            pointer-events: auto; width: 100%;
+        .speed-opt:hover { background: rgba(255,107,53,0.15); color: #ff8855; }
+        .speed-slider-wrap {
+            display: flex; align-items: center;
+            pointer-events: auto; width: 100%; box-sizing: border-box;
         }
-        .sim-slider-wrap.visible { display: flex; }
-        .sim-slider-wrap input[type="range"] {
+        .speed-slider-wrap input[type="range"] {
             -webkit-appearance: none; appearance: none;
-            width: 100%; height: 3px; background: rgba(255,255,255,0.15);
+            width: 100%; height: 1.5px; background: rgba(255,255,255,0.15);
             border-radius: 2px; outline: none; cursor: pointer;
         }
-        .sim-slider-wrap input[type="range"]::-webkit-slider-thumb {
+        .speed-slider-wrap input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none; appearance: none;
-            width: 10px; height: 16px; border-radius: 2px;
-            background: rgba(192,196,206,0.95); cursor: pointer; border: none;
+            width: 13px; height: 8px; border-radius: 2px;
+            background: rgba(110,114,124,0.95); cursor: pointer; border: none;
         }
-        .sim-slider-wrap input[type="range"]::-moz-range-thumb {
-            width: 10px; height: 16px; border-radius: 2px;
-            background: rgba(192,196,206,0.95); cursor: pointer; border: none;
+        .speed-slider-wrap input[type="range"]::-moz-range-thumb {
+            width: 13px; height: 8px; border-radius: 2px;
+            background: rgba(110,114,124,0.95); cursor: pointer; border: none;
         }
 
         #loading {
@@ -815,6 +883,7 @@
             text-transform: uppercase;
             color: rgba(255,255,255,0.28);
             margin-top: 8px;
+            line-height: 2;
         }
         #observerSpecs .data-source {
             margin-top: 14px;
@@ -842,7 +911,7 @@
             align-items: center;
             justify-content: space-between;
             gap: 12px;
-            padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+            padding: 6px 12px calc(6px + env(safe-area-inset-bottom));
             background: #000;
             border-top: 1px solid rgba(255,255,255,0.08);
             pointer-events: auto;
@@ -907,8 +976,8 @@
             font-size: 16px;
         }
         #timeline-footer.is-active .timeline-pan-mode-icon {
-            width: 18px;
-            height: 18px;
+            width: 22px;
+            height: 22px;
         }
         #timeline-footer.is-active #btn-observer-angle .hint-btn-icon {
             width: 20px;
@@ -927,7 +996,55 @@
         #timeline-footer.is-active .timeline-playback-icon {
             width: 16px;
             height: 16px;
-            font-size: 15px;
+        }
+        .zoom-toggle-wrap {
+            position: relative;
+        }
+        .zoom-pm-icon {
+            width: 14px;
+            height: 20px;
+            display: block;
+            flex: 0 0 auto;
+        }
+        #zoom-slider-popup {
+            position: absolute;
+            bottom: 4px;
+            top: auto;
+            right: -8px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            background: rgba(10,12,20,0.9);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 14px;
+            padding: 10px 8px;
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            z-index: 130;
+        }
+        #zoom-slider-popup.open {
+            display: flex;
+        }
+        #zoom-slider-popup.below {
+            bottom: auto;
+            top: -4px;
+        }
+        .zoom-slider-track-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 110px;
+            width: 28px;
+        }
+        #zoom-slider {
+            writing-mode: vertical-lr;
+            direction: rtl;
+            width: 20px;
+            height: 100px;
+            cursor: pointer;
+            accent-color: rgba(110,198,255,0.85);
         }
         @media (max-width: 700px) {
             :root {
@@ -935,7 +1052,7 @@
             }
             .hint-btn,
             .hint-select,
-            .sim-opt {
+            .speed-opt {
                 font-size: 14.5px;
             }
             #timeline-footer {
@@ -962,8 +1079,8 @@
                 font-size: 16px;
             }
             #timeline-footer .timeline-pan-mode-icon {
-                width: 18px;
-                height: 18px;
+                width: 22px;
+                height: 22px;
             }
             #timeline-footer .footer-profile-link {
                 width: 40px;
@@ -986,7 +1103,6 @@
             #timeline-footer .timeline-playback-icon {
                 width: 16px;
                 height: 16px;
-                font-size: 15px;
             }
             .timeline-bar {
                 padding: 12px 14px 8px;
@@ -1090,6 +1206,12 @@
             if (footerProfileImage) {
                 footerProfileImage.src = window.__footerProfileImageSrc || '';
                 footerProfileImage.alt = window.__footerProfileImageAlt || '';
+                const isJavi = (window.__footerProfileImageSrc || '').includes('javi.jpg');
+                const link = footerProfileImage.closest('a.footer-profile-link');
+                if (link && !isJavi) {
+                    link.href = 'https://model.earth';
+                    link.setAttribute('aria-label', 'model.earth');
+                }
                 return true;
             }
             return false;
@@ -1151,14 +1273,6 @@
                         </svg>
                     </span>
                 </button>
-                <button class="hint-btn icon-btn circle-btn timeline-pan-btn" id="btn-pan-mode" onclick="togglePanMode()" aria-label="Enable pan mode">
-                    <span class="timeline-pan-mode-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 3v18M3 12h18"></path>
-                            <path d="M12 3l-2.5 2.5M12 3l2.5 2.5M21 12l-2.5-2.5M21 12l-2.5 2.5M12 21l-2.5-2.5M12 21l2.5-2.5M3 12l2.5-2.5M3 12l2.5 2.5"></path>
-                        </svg>
-                    </span>
-                </button>
             </div>
         </div>
         <div id="timeline-footer-center-slot">
@@ -1168,14 +1282,37 @@
         </div>
         <div id="timeline-footer-icon-slot">
             <div class="timeline-icon-row">
-                <button class="hint-btn icon-btn circle-btn" id="btn-zoom-in" onclick="zoomIn()" aria-label="Zoom in">
-                    <span class="timeline-zoom-icon plus" aria-hidden="true"></span>
+                <button class="hint-btn icon-btn circle-btn timeline-pan-btn" id="btn-pan-mode" onclick="togglePanMode()" aria-label="Enable pan mode">
+                    <span class="timeline-pan-mode-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 3v18M3 12h18"></path>
+                            <path d="M12 3l-2.5 2.5M12 3l2.5 2.5M21 12l-2.5-2.5M21 12l-2.5 2.5M12 21l-2.5-2.5M12 21l2.5-2.5M3 12l2.5-2.5M3 12l2.5 2.5"></path>
+                        </svg>
+                    </span>
                 </button>
-                <button class="hint-btn icon-btn circle-btn" id="btn-zoom-out" onclick="zoomOut()" aria-label="Zoom out">
-                    <span class="timeline-zoom-icon minus" aria-hidden="true"></span>
-                </button>
+                <div class="zoom-toggle-wrap" id="zoom-toggle-wrap">
+                    <div id="zoom-slider-popup" aria-hidden="true">
+                        <button class="hint-btn icon-btn circle-btn" id="btn-zoom-slider-in" onclick="zoomIn()" aria-label="Zoom in">
+                            <span class="timeline-zoom-icon plus" aria-hidden="true"></span>
+                        </button>
+                        <div class="zoom-slider-track-wrap">
+                            <input type="range" id="zoom-slider" min="0" max="1000" step="1"
+                                   oninput="onZoomSliderInput(this.value)" aria-label="Zoom level">
+                        </div>
+                        <button class="hint-btn icon-btn circle-btn" id="btn-zoom-slider-out" onclick="zoomOut()" aria-label="Zoom out">
+                            <span class="timeline-zoom-icon minus" aria-hidden="true"></span>
+                        </button>
+                    </div>
+                    <button class="hint-btn icon-btn circle-btn" id="btn-zoom-toggle" onclick="toggleZoomSlider()" aria-label="Zoom controls">
+                        <svg class="zoom-pm-icon" viewBox="-2 0 13 16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true">
+                            <line x1="1.5" y1="1" x2="1.5" y2="7"/>
+                            <line x1="-1.5" y1="4" x2="4.5" y2="4"/>
+                            <line x1="4.8" y1="12" x2="10.5" y2="12"/>
+                        </svg>
+                    </button>
+                </div>
                 <button class="hint-btn icon-btn circle-btn" id="btn-play-pause" onclick="togglePlayback()" aria-label="Pause playback">
-                    <span class="timeline-playback-icon" aria-hidden="true">&#10074;&#10074;</span>
+                    <span class="timeline-playback-icon" aria-hidden="true"><svg viewBox="-1 0 12 14" width="10" height="14" fill="currentColor"><rect x="-1" y="0" width="4.5" height="14" rx="1"/><rect x="6.5" y="0" width="4.5" height="14" rx="1"/></svg></span>
                 </button>
             </div>
         </div>
@@ -1202,6 +1339,7 @@
                 <option>From Neptune</option>
             </select>
         </div>
+        <div id="observer-specs-summary"></div>
         <div class="observer-specs-toggle-wrap" id="observer-specs-toggle-wrap">
             <button class="observer-btn observer-specs-toggle" id="btn-toggle-observer-specs" onclick="toggleObserverSpecsEditor()">Change Specs</button>
         </div>
@@ -1221,43 +1359,76 @@
                 </div>
             </div>
         </div>
-        <div class="data-source" id="trajectory-source">Trajectory Data: Embedded JPL Horizons Fallback</div>
+        <div class="data-source" id="trajectory-source">Trajectory Data:<br><span style="text-transform:none">Embedded JPL Horizons Fallback</span></div>
     </div>
 
         <div id="controls-hint">
+        <div id="controls-hint-body">
         <div class="hint-select-wrap">
             <select class="hint-select" id="event" onchange="onEventChange(this.value)"></select>
         </div>
+        <div id="controls-hint-collapsible">
         <button class="hint-btn" id="btn-overview" onclick="focusOverview()">Overview</button>
         <button class="hint-btn" id="btn-follow" onclick="toggleFollow()">Follow</button>
         <button class="hint-btn" id="btn-earth" onclick="focusEarth()">Focus Earth</button>
         <button class="hint-btn" id="btn-moon" onclick="focusMoon()">Focus Moon</button>
         <button class="hint-btn" id="btn-solar-system" onclick="focusSolarSystem()">Solar System</button>
-        <div class="sim-group">
-            <button class="hint-btn sim-active" id="btn-sim" onclick="toggleSimMenu()">Model Speed 1x</button>
-            <div class="sim-dropdown" id="sim-dropdown">
-                <div class="sim-opt" style="display:flex;align-items:center;gap:8px;">
-                    <input type="number" id="sim-custom-speed" min="1" step="1" value="4" onblur="commitCustomSpeed(event)" onkeydown="onCustomSpeedKeydown(event)" style="width:72px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.16);border-radius:8px;color:#fff;padding:6px 8px;">
+        </div><!-- /controls-hint-collapsible -->
+        <div class="speed-group">
+            <div class="speed-cardX">
+                <button class="hint-btn speed-card-headerX speed-active" style="margin-bottom:8px" id="btn-speed" onclick="toggleSimMenu()">Model Speed 1x</button>
+            </div>
+            <div class="speed-slider-wrap" id="speed-slider-wrap">
+                <input type="range" id="speed-slider" min="0" max="100" value="0"
+                       oninput="onSliderChange(this.value)">
+            </div>
+            <div class="speed-dropdown" id="speed-dropdown">
+                <div class="speed-opt" style="display:flex;align-items:center;gap:8px;">
+                    <input type="number" id="speed-custom-speed" min="1" step="1" value="4" onblur="commitCustomSpeed(event)" onkeydown="onCustomSpeedKeydown(event)" style="width:72px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.16);border-radius:8px;color:#fff;padding:6px 8px;">
                     <span style="font-size:12px;color:#9fc4db;">x</span>
                 </div>
-                <button class="sim-opt" data-speed="1" onclick="setSpeed(1)">Speed 1x</button>
-                <button class="sim-opt" data-speed="1000" onclick="setSpeed(1000)">Speed 1,000x</button>
-                <button class="sim-opt" data-speed="5000" onclick="setSpeed(5000)">Speed 5,000x</button>
-                <button class="sim-opt" data-speed="10000" onclick="setSpeed(10000)">Speed 10,000x</button>
-                <button class="sim-opt" data-speed="30000" onclick="setSpeed(30000)">Speed 30,000x</button>
-                <button class="sim-opt" data-speed="250000" onclick="setSpeed(250000)">Speed 250,000x</button>
-                <button class="sim-opt" data-speed="1000000" onclick="setSpeed(1000000)">Speed 1,000,000x</button>
-                <button class="sim-opt" data-speed="10000000" onclick="setSpeed(10000000)">Speed 10,000,000x</button>
+                <button class="speed-opt" data-speed="1" onclick="setSpeed(1)">Speed 1x</button>
+                <button class="speed-opt" data-speed="1000" onclick="setSpeed(1000)">Speed 1,000x</button>
+                <button class="speed-opt" data-speed="5000" onclick="setSpeed(5000)">Speed 5,000x</button>
+                <button class="speed-opt" data-speed="10000" onclick="setSpeed(10000)">Speed 10,000x</button>
+                <button class="speed-opt" data-speed="30000" onclick="setSpeed(30000)">Speed 30,000x</button>
+                <button class="speed-opt" data-speed="250000" onclick="setSpeed(250000)">Speed 250,000x</button>
+                <button class="speed-opt" data-speed="1000000" onclick="setSpeed(1000000)">Speed 1,000,000x</button>
+                <button class="speed-opt" data-speed="10000000" onclick="setSpeed(10000000)">Speed 10,000,000x</button>
             </div>
         </div>
-        <div class="sim-slider-wrap" id="sim-slider-wrap">
-            <input type="range" id="sim-slider" min="0" max="100" value="0"
-                   oninput="onSliderChange(this.value)">
-        </div>
+        <!-- <button class="hint-btn" id="btn-reset" onclick="resetRealTime()" style="display:none">Reset to Real Speed</button> -->
+        </div><!-- /controls-hint-body -->
         <div id="timeline-icon-home"></div>
-        <button class="hint-btn" id="btn-reset" onclick="resetRealTime()" style="display:none">Reset to Real Speed</button>
     </div>
+    <button id="controls-hint-toggle" onclick="toggleControlsHint()" aria-label="Hide controls" title="Hide controls">
+        <svg viewBox="0 0 16 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="1" y1="1" x2="15" y2="1"/><line x1="1" y1="7" x2="15" y2="7"/><line x1="1" y1="13" x2="15" y2="13"/></svg>
+    </button>
 
+    <script>
+        var CONTROLS_HINT_KEY = 'controlsHintHidden';
+        var X_SVG = '<svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="2" y1="2" x2="8" y2="8"/><line x1="8" y1="2" x2="2" y2="8"/></svg>';
+        var LINES_SVG = '<svg viewBox="0 0 14 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="1" y1="1" x2="13" y2="1"/><line x1="1" y1="6" x2="13" y2="6"/><line x1="1" y1="11" x2="13" y2="11"/></svg>';
+
+        function applyControlsHintState(hidden) {
+            var col = document.getElementById('controls-hint-collapsible');
+            var btn = document.getElementById('controls-hint-toggle');
+            if (!col || !btn) return;
+            col.style.display = hidden ? 'none' : '';
+            btn.setAttribute('aria-label', hidden ? 'Show controls' : 'Hide controls');
+            btn.title = hidden ? 'Show controls' : 'Hide controls';
+            btn.innerHTML = LINES_SVG;
+        }
+
+        function toggleControlsHint() {
+            var hidden = document.getElementById('controls-hint-collapsible').style.display === 'none';
+            var next = !hidden;
+            localStorage.setItem(CONTROLS_HINT_KEY, next ? '1' : '0');
+            applyControlsHintState(next);
+        }
+
+        applyControlsHintState(localStorage.getItem(CONTROLS_HINT_KEY) === '1');
+    </script>
     <script type="importmap">
     {
         "imports": {
@@ -1969,7 +2140,7 @@
 
         function setTrajectorySourceLabel(text) {
             const el = document.getElementById('trajectory-source');
-            if (el) el.textContent = `Trajectory Data: ${text}`;
+            if (el) el.innerHTML = `Trajectory Data:<br><span style="text-transform:none">${text}</span>`;
         }
 
         function extractArowZipUrl(postPayload) {
@@ -2184,6 +2355,19 @@
         controls.minDistance = 0.5;
         controls.maxDistance = 1200000;
         controls.target.set(44, 0, -15);
+
+        controls.addEventListener('change', () => {
+            const popup = document.getElementById('zoom-slider-popup');
+            if (popup && popup.classList.contains('open')) updateZoomSlider();
+        });
+
+        window.addEventListener('resize', () => {
+            const popup = document.getElementById('zoom-slider-popup');
+            if (popup && popup.classList.contains('open')) {
+                popup.classList.remove('open');
+                popup.setAttribute('aria-hidden', 'true');
+            }
+        }, { passive: true });
 
         function updatePanModeState() {
             controls.enableRotate = !panModeActive;
@@ -3182,7 +3366,8 @@
 
             footer.classList.toggle('is-active', useFooter);
             footer.setAttribute('aria-hidden', useFooter ? 'false' : 'true');
-            setMobileControlsFooterOffset(useFooter ? footer.offsetHeight + 12 : 0);
+            setMobileControlsFooterOffset(useFooter ? footer.offsetHeight + 20 : 0);
+            document.getElementById('timeline')?.classList.toggle('is-narrow', useFooter);
             syncTelemetryNarrowState();
         }
 
@@ -4587,12 +4772,12 @@
         function pulseObserverControl(elementId) {
             const el = document.getElementById(elementId);
             if (!el) return;
-            el.classList.add('sim-active');
+            el.classList.add('speed-active');
             if (observerAngleResetTimeout !== null) {
                 clearTimeout(observerAngleResetTimeout);
             }
             observerAngleResetTimeout = window.setTimeout(() => {
-                el.classList.remove('sim-active');
+                el.classList.remove('speed-active');
                 observerAngleResetTimeout = null;
             }, 1200);
         }
@@ -4662,8 +4847,24 @@
             };
         }
 
+        function setObserverSummary(payload) {
+            const el = document.getElementById('observer-specs-summary');
+            if (!el) return;
+            const fmt = v => (v !== undefined && v !== null) ? v : '—';
+            const fmtXYZ = obj => obj ? `${obj.x},  ${obj.y},  ${obj.z}` : '—';
+            el.innerHTML =
+                `<div class="obs-spec-row"><span class="obs-spec-label">View</span><span class="obs-spec-value">${fmt(payload.view)}</span></div>` +
+                `<div class="obs-spec-row"><span class="obs-spec-label">Camera Mode</span><span class="obs-spec-value">${fmt(payload.cameraMode)}</span></div>` +
+                `<div class="obs-spec-row"><span class="obs-spec-label">Distance</span><span class="obs-spec-value">${fmt(payload.distance)}</span></div>` +
+                `<div class="obs-spec-row"><span class="obs-spec-label">Polar Degree</span><span class="obs-spec-value">${fmt(payload.polarDeg)}°</span></div>` +
+                `<div class="obs-spec-row"><span class="obs-spec-label">Position</span><span class="obs-spec-value">${fmtXYZ(payload.position)}</span></div>` +
+                `<div class="obs-spec-row"><span class="obs-spec-label">Target</span><span class="obs-spec-value">${fmtXYZ(payload.target)}</span></div>` +
+                `<div class="obs-spec-row"><span class="obs-spec-label">Azimuth Degree</span><span class="obs-spec-value">${fmt(payload.azimuthDeg)}°<span class="obs-spec-note">${payload.azimuthDeg == 0 ? '= forward, increases clockwise' : '= horizontal angle (0° = forward, increases clockwise)'}</span></span></div>`;
+        }
+
         function setObserverJsonText(payload) {
             document.getElementById('observer-json').value = JSON.stringify(payload, null, 2);
+            setObserverSummary(payload);
         }
 
         function getCurrentViewAnchorTarget() {
@@ -4892,6 +5093,24 @@
             return forward.normalize();
         }
 
+        const ZOOM_SLIDER_LOG_MIN = Math.log(0.5);
+        const ZOOM_SLIDER_LOG_MAX = Math.log(1200000);
+
+        function distToSlider(dist) {
+            const clamped = Math.max(0.5, Math.min(1200000, dist));
+            return Math.round(1000 * (ZOOM_SLIDER_LOG_MAX - Math.log(clamped)) / (ZOOM_SLIDER_LOG_MAX - ZOOM_SLIDER_LOG_MIN));
+        }
+
+        function sliderToDist(val) {
+            return Math.exp(ZOOM_SLIDER_LOG_MAX - (val / 1000) * (ZOOM_SLIDER_LOG_MAX - ZOOM_SLIDER_LOG_MIN));
+        }
+
+        function updateZoomSlider() {
+            const slider = document.getElementById('zoom-slider');
+            if (!slider) return;
+            slider.value = distToSlider(camera.position.distanceTo(controls.target));
+        }
+
         function zoomCameraBy(scaleFactor) {
             targetPos = null;
             targetLook = null;
@@ -4986,10 +5205,13 @@
             const btn = document.getElementById('btn-play-pause');
             const icon = btn.querySelector('.timeline-playback-icon');
             const isPausedState = paused || scrubDay !== null || scrubSolarDateMs !== null;
-            icon.innerHTML = isPausedState ? '&#9654;' : '&#10074;&#10074;';
+            icon.innerHTML = isPausedState ? '&#9654;' : '<svg viewBox="-1 0 12 14" width="10" height="14" fill="currentColor"><rect x="-1" y="0" width="4.5" height="14" rx="1"/><rect x="6.5" y="0" width="4.5" height="14" rx="1"/></svg>';
             btn.setAttribute('aria-label', isPausedState ? 'Play playback' : 'Pause playback');
-            btn.classList.toggle('sim-active', isPausedState);
+            btn.classList.toggle('speed-active', isPausedState);
             btn.classList.toggle('is-playing', !isPausedState);
+            document.getElementById('controls-hint')?.classList.toggle('sim-paused', isPausedState);
+            const simBtn = document.getElementById('btn-speed');
+            if (simBtn) simBtn.textContent = isPausedState ? 'Model Paused' : getSpeedButtonLabel();
         }
 
         function setRestartButtonVisible(visible) {
@@ -5043,7 +5265,7 @@
             scrubSolarDateMs = null;
             solarBaseDateMs = getEventDateMs(0);
             lastPlanetDateInputValue = '';
-            document.getElementById('sim-dropdown').classList.remove('open');
+            document.getElementById('speed-dropdown').classList.remove('open');
             refreshSpeedControls();
             updatePlaybackButton();
             const slider = document.getElementById('timeline-slider');
@@ -5065,7 +5287,7 @@
             scrubSolarDateMs = null;
             currentEventTumbleSpeedApplied = false;
             zoomForwardAmount = 0;
-            document.getElementById('sim-dropdown').classList.remove('open');
+            document.getElementById('speed-dropdown').classList.remove('open');
             refreshSpeedControls();
             updatePlaybackButton();
             if (currentEventKind === 'orion') {
@@ -5280,8 +5502,49 @@
             else focusOverview(false);
         });
 
-        window.zoomIn = () => zoomCameraBy(0.82);
-        window.zoomOut = () => zoomCameraBy(1.22);
+        window.zoomIn = () => { zoomCameraBy(0.82); updateZoomSlider(); };
+        window.zoomOut = () => { zoomCameraBy(1.22); updateZoomSlider(); };
+
+        window.onZoomSliderInput = (val) => {
+            const targetDist = sliderToDist(Number(val));
+            const currentDist = camera.position.distanceTo(controls.target);
+            if (currentDist > 0) zoomCameraBy(targetDist / currentDist);
+        };
+
+        window.toggleZoomSlider = () => {
+            const popup = document.getElementById('zoom-slider-popup');
+            const wrap = document.getElementById('zoom-toggle-wrap');
+            const isOpen = popup.classList.contains('open');
+            if (!isOpen) {
+                updateZoomSlider();
+                popup.style.visibility = 'hidden';
+                popup.style.display = 'flex';
+                const popupH = popup.offsetHeight;
+                popup.style.visibility = '';
+                popup.style.display = '';
+                const rect = wrap.getBoundingClientRect();
+                const spaceBelow = window.innerHeight - rect.bottom;
+                if (spaceBelow >= popupH) {
+                    popup.classList.add('below');
+                } else {
+                    popup.classList.remove('below');
+                }
+                popup.classList.add('open');
+                popup.setAttribute('aria-hidden', 'false');
+            } else {
+                popup.classList.remove('open');
+                popup.setAttribute('aria-hidden', 'true');
+            }
+        };
+
+        document.addEventListener('click', (e) => {
+            const wrap = document.getElementById('zoom-toggle-wrap');
+            const popup = document.getElementById('zoom-slider-popup');
+            if (popup && popup.classList.contains('open') && wrap && !wrap.contains(e.target)) {
+                popup.classList.remove('open');
+                popup.setAttribute('aria-hidden', 'true');
+            }
+        }, true);
 
         window.openObserverSpecs = () => {
             const payload = getObserverPayloadFromCamera(camera.position.clone(), controls.target.clone(), {
@@ -5348,12 +5611,12 @@
 
         // Accelerate time
         window.toggleSimMenu = () => {
-            const dropdown = document.getElementById('sim-dropdown');
+            const dropdown = document.getElementById('speed-dropdown');
             const isOpen = dropdown.classList.toggle('open');
             if (isOpen) {
                 if (getTrackerWidth() > 700) {
                     requestAnimationFrame(() => {
-                        const input = document.getElementById('sim-custom-speed');
+                        const input = document.getElementById('speed-custom-speed');
                         input?.focus();
                         input?.select();
                     });
@@ -5386,22 +5649,18 @@
         }
 
         function formatSpeedLabel(spd) {
-            const prefix = isNarrowUi() ? 'Speed' : 'Model Speed';
-            if (isNarrowUi()) {
-                return `${prefix} ${formatCompactSpeedValue(spd)}`;
-            }
-            const speedText = Math.round(spd).toLocaleString();
-            return `${prefix} ${speedText}x`;
+            const val = formatCompactSpeedValue(spd);
+            return `Model Speed ${val}${spd <= 1 ? 'x' : ''}`;
         }
 
         function getCustomSpeedValue() {
-            const input = document.getElementById('sim-custom-speed');
+            const input = document.getElementById('speed-custom-speed');
             const parsed = Math.round(Number(input?.value) || 4);
             return Math.max(1, parsed);
         }
 
         function syncCustomSpeedField() {
-            const input = document.getElementById('sim-custom-speed');
+            const input = document.getElementById('speed-custom-speed');
             if (!input) return;
             const nextValue = String(Math.max(1, Math.round(speedMult || 1)));
             input.value = nextValue;
@@ -5409,17 +5668,14 @@
         }
 
         function getSpeedButtonLabel() {
-            return speedMult > 1 ? formatSpeedLabel(speedMult) : (isNarrowUi() ? 'Speed 1x' : 'Model Speed 1x');
+            return formatSpeedLabel(speedMult);
         }
 
         function refreshSpeedOptionLabels() {
-            document.querySelectorAll('.sim-opt[data-speed]').forEach((button) => {
+            document.querySelectorAll('.speed-opt[data-speed]').forEach((button) => {
                 const spd = Number(button.dataset.speed || 1);
-                if (isNarrowUi()) {
-                    button.textContent = spd <= 1 ? 'Speed 1x' : `Speed ${formatCompactSpeedValue(spd)}`;
-                    return;
-                }
-                button.textContent = `Speed ${Math.round(spd).toLocaleString()}x`;
+                const val = formatCompactSpeedValue(spd);
+                button.textContent = `Speed ${val}${spd <= 1 ? 'x' : ''}`;
             });
         }
 
@@ -5450,11 +5706,11 @@
         }
 
         function refreshSpeedControls() {
-            const simBtn = document.getElementById('btn-sim');
-            const sliderWrap = document.getElementById('sim-slider-wrap');
-            const slider = document.getElementById('sim-slider');
+            const simBtn = document.getElementById('btn-speed');
+            const sliderWrap = document.getElementById('speed-slider-wrap');
+            const slider = document.getElementById('speed-slider');
 
-            simBtn.classList.add('sim-active');
+            simBtn.classList.add('speed-active');
             simBtn.textContent = getSpeedButtonLabel();
             sliderWrap.classList.add('visible');
             slider.value = speedMult > 1 ? speedToSlider(speedMult) : '0';
@@ -5464,7 +5720,7 @@
 
         window.setSpeed = (spd) => {
             if (spd <= 1) {
-                document.getElementById('sim-dropdown').classList.remove('open');
+                document.getElementById('speed-dropdown').classList.remove('open');
                 resetRealTime();
                 return;
             }
@@ -5478,7 +5734,7 @@
             pausedDay = null;
             pausedSolarDateMs = null;
             speedMult = spd;
-            document.getElementById('sim-dropdown').classList.remove('open');
+            document.getElementById('speed-dropdown').classList.remove('open');
             refreshSpeedControls();
             showResetButtonTemporarily();
             updatePlaybackButton();
@@ -5486,10 +5742,10 @@
 
         window.commitCustomSpeed = (event) => {
             const nextTarget = event?.relatedTarget;
-            if (nextTarget && nextTarget.closest?.('.sim-dropdown')) {
+            if (nextTarget && nextTarget.closest?.('.speed-dropdown')) {
                 return;
             }
-            const input = document.getElementById('sim-custom-speed');
+            const input = document.getElementById('speed-custom-speed');
             if (!input) return;
             const nextValue = String(getCustomSpeedValue());
             if (input.dataset.lastApplied === nextValue) return;
@@ -5638,7 +5894,7 @@
             const progressTrack = document.getElementById('progress-track');
             const timelineBar = document.querySelector('.timeline-bar');
             const planetDateInput = document.getElementById('planet-date-input');
-            const simSlider = document.getElementById('sim-slider');
+            const simSlider = document.getElementById('speed-slider');
             syncMobileControlsFooter();
             if (slider) {
                 slider.addEventListener('pointerdown', (event) => {
@@ -5739,8 +5995,8 @@
 
         // Close dropdown on outside click
         document.addEventListener('click', (e) => {
-            if (!e.target.closest('.sim-group')) {
-                document.getElementById('sim-dropdown').classList.remove('open');
+            if (!e.target.closest('.speed-group')) {
+                document.getElementById('speed-dropdown').classList.remove('open');
             }
             if (timelineDateEditorOpen && !e.target.closest('#timeline-met-wrap')) {
                 setTimelineDateEditorOpen(false);
