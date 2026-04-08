@@ -93,7 +93,11 @@
                 const eventVideoFrame = document.getElementById('event-video-frame');
 
                 if (titleEl) titleEl.textContent = meta.titleText || '';
-                if (nameEl) nameEl.textContent = meta.missionName || '';
+                if (nameEl) {
+                    nameEl.textContent = meta.missionName || '';
+                    nameEl.classList.toggle('mission-name-long', (meta.missionName || '').length > 25);
+                    nameEl.classList.toggle('mission-name-xlong', (meta.missionName || '').length > 50);
+                }
                 if (overviewButton) overviewButton.textContent = getBootstrapOverviewLabel(meta.overviewLabel || 'Overview');
                 if (followButton) followButton.textContent = meta.followLabel || 'Follow';
                 if (simButton) simButton.textContent = 'Model Speed 1x';
@@ -197,6 +201,12 @@
             font-size: 38px; font-weight: 800; letter-spacing: -0.5px;
             background: linear-gradient(135deg, #fff 0%, #6ec6ff 60%, #ff6b35 100%);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .mission-name-long {
+            font-size: 30px;
+        }
+        .mission-name-xlong {
+            font-size: 24px;
         }
         @container (max-width: 640px) {
             .mission-name {
@@ -777,23 +787,6 @@
             color: #fff;
         }
         .speed-group { position: relative; }
-        .speed-card {
-            background: rgba(10,12,20,0.6); border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 8px; padding: 7px 14px; width: 135px; box-sizing: border-box;
-            backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-        }
-        .speed-card-header {
-            display: block; width: 100%; background: transparent; border: none;
-            color: rgba(255,255,255,0.75); font-size: 12px; font-weight: 500;
-            font-family: 'Inter', sans-serif; cursor: pointer; text-align: center;
-            padding: 2px 0 4px; transition: color 0.2s;
-        }
-        .speed-card-header { font-size: 11px; }
-        .speed-card-header:hover { color: #fff; }
-        .speed-card-header.speed-active { color: #ff8855; }
-        .speed-card:has(.speed-card-header.speed-active) { background: rgba(255,107,53,0.15); border-color: rgba(255,107,53,0.3); }
-        .sim-paused .speed-card-header.speed-active { color: rgba(255,255,255,0.75); }
-        .sim-paused .speed-card:has(.speed-card-header.speed-active) { background: rgba(10,12,20,0.6); border-color: rgba(255,255,255,0.1); }
         .sim-paused .speed-slider-wrap input[type="range"]::-webkit-slider-thumb { background: #ff8855; }
         .sim-paused .speed-slider-wrap input[type="range"]::-moz-range-thumb { background: #ff8855; }
         .speed-dropdown {
@@ -1233,7 +1226,7 @@
             <div class="timeline-header">
                 <div class="timeline-title" id="timeline-title-text">Mission Time</div>
                 <div class="timeline-met-wrap" id="timeline-met-wrap">
-                    <div class="timeline-met" id="met-display">—</div>
+                    <div class="timeline-met" id="met-display" onclick="toggleTimelineDateEditor(event)">—</div>
                     <button class="timeline-calendar-btn" id="btn-timeline-calendar" onclick="toggleTimelineDateEditor(event)" aria-label="Edit date">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <rect x="3" y="5" width="18" height="16" rx="2"></rect>
@@ -1375,9 +1368,7 @@
         <button class="hint-btn" id="btn-solar-system" onclick="focusSolarSystem()">Solar System</button>
         </div><!-- /controls-hint-collapsible -->
         <div class="speed-group">
-            <div class="speed-cardX">
-                <button class="hint-btn speed-card-headerX speed-active" style="margin-bottom:8px" id="btn-speed" onclick="toggleSimMenu()">Model Speed 1x</button>
-            </div>
+            <button class="hint-btn speed-active" style="margin-bottom:8px" id="btn-speed" onclick="toggleSimMenu()">Model Speed 1x</button>
             <div class="speed-slider-wrap" id="speed-slider-wrap">
                 <input type="range" id="speed-slider" min="0" max="100" value="0"
                        oninput="onSliderChange(this.value)">
@@ -1388,7 +1379,7 @@
                     <span style="font-size:12px;color:#9fc4db;">x</span>
                 </div>
                 <button class="speed-opt" data-speed="1" onclick="setSpeed(1)">Speed 1x</button>
-                <button class="speed-opt" data-speed="1000" onclick="setSpeed(1000)">Speed 1,000x</button>
+                <button class="speed-opt" data-speed="2000" onclick="setSpeed(2000)">Speed 2,000x</button>
                 <button class="speed-opt" data-speed="5000" onclick="setSpeed(5000)">Speed 5,000x</button>
                 <button class="speed-opt" data-speed="10000" onclick="setSpeed(10000)">Speed 10,000x</button>
                 <button class="speed-opt" data-speed="30000" onclick="setSpeed(30000)">Speed 30,000x</button>
@@ -1452,24 +1443,25 @@
         const DEFAULT_BROWSER_TITLE = 'Artemis II — Live Mission Tracker';
         const DEFAULT_EVENT_ID = 'orion2026';
         const EVENT_SPEC_FILES = {
+            starman2018: 'starman2018.config',
+            starlinkgen1: 'starlink-gen1.yaml',
             orion2026: 'orion2026.yaml',
+            iss: 'iss.yaml',
             mars2033: 'mars2033.yaml',
             futurama2100: 'futurama2100.yaml',
             fireballs2333: 'fireballs2333.yaml',
-            starman2018: 'starman2018.config',
-            iss: 'iss.yaml',
-            starlinkgen1: 'starlink-gen1.yaml'
         };
+        // Is this addition to #event waiting for DOM
         const EVENT_LABELS = {
+            starman2018: 'Starman 2018',
+            starlinkgen1: 'Starlink Satellite',
             orion2026: 'Orion 2026',
+            iss: 'ISS 2030',
             mars2033: 'Mars 2033',
             futurama2100: 'Futurama 2100',
             fireballs2333: 'Fireballs 2333',
-            starman2018: 'Starman 2018',
-            iss: 'ISS Decommission',
-            starlinkgen1: 'Starlink Satellite'
         };
-        const EVENT_IDS = ['orion2026', 'mars2033', 'futurama2100', 'fireballs2333', 'starman2018', 'iss', 'starlinkgen1'];
+        const EVENT_IDS = ['starman2018', 'orion2026', 'iss', 'mars2033', 'futurama2100', 'fireballs2333', 'starlinkgen1'];
         const EVENT_OPTIONS = new Set(EVENT_IDS);
         const EVENT_SPEC_CACHE = new Map();
         const INITIAL_EVENT_ID = EVENT_OPTIONS.has(window.__initialEventId)
@@ -3209,7 +3201,13 @@
                 select.value = spec.id;
             }
             document.getElementById('mission-title-text').textContent = spec.kind === 'orion' ? 'NASA · CSA' : '';
-            document.getElementById('mission-name').textContent = spec.missionName || '';
+            {
+                const missionNameEl = document.getElementById('mission-name');
+                const missionName = spec.missionName || '';
+                missionNameEl.textContent = missionName;
+                missionNameEl.classList.toggle('mission-name-long', missionName.length > 25);
+                missionNameEl.classList.toggle('mission-name-xlong', missionName.length > 50);
+            }
             document.getElementById('btn-overview').textContent = getResponsiveOverviewLabel(spec.overviewLabel || 'Overview');
             document.getElementById('btn-follow').textContent = spec.followLabel || 'Follow';
             document.getElementById('btn-solar-system').style.display = spec.showSolarSystem === false ? 'none' : '';
@@ -4540,7 +4538,13 @@
 
         function updateHeaderText() {
             document.getElementById('mission-title-text').textContent = currentEventKind === 'orion' ? 'NASA · CSA' : '';
-            document.getElementById('mission-name').textContent = currentEventName || '';
+            {
+                const missionNameEl = document.getElementById('mission-name');
+                const missionName = currentEventName || '';
+                missionNameEl.textContent = missionName;
+                missionNameEl.classList.toggle('mission-name-long', missionName.length > 25);
+                missionNameEl.classList.toggle('mission-name-xlong', missionName.length > 50);
+            }
         }
 
         function updateBrowserTitle() {
@@ -5719,15 +5723,34 @@
         }
 
         window.setSpeed = (spd) => {
+            const now = Date.now();
+            const preserveCurrentMissionTime = activeView === 'event';
+            const currentSceneDay = getCurrentSceneDay(now);
+            const currentSolarDateMs = getCurrentSolarDateMs(now);
+
             if (spd <= 1) {
                 document.getElementById('speed-dropdown').classList.remove('open');
+                if (preserveCurrentMissionTime) {
+                    speedMult = 1;
+                    simStartReal = now;
+                    simStartDay = currentSceneDay;
+                    solarSimStartDateMs = currentSolarDateMs;
+                    scrubDay = null;
+                    scrubSolarDateMs = null;
+                    paused = false;
+                    pausedDay = null;
+                    pausedSolarDateMs = null;
+                    refreshSpeedControls();
+                    updatePlaybackButton();
+                    return;
+                }
                 resetRealTime();
                 return;
             }
-            simStartReal = Date.now();
-            // Start simulation from scrub position if user was scrubbing, else from real time
-            simStartDay = getCurrentSceneDay(simStartReal);
-            solarSimStartDateMs = getCurrentSolarDateMs(simStartReal);
+            simStartReal = now;
+            // Start simulation from the current mission time, not from mission start.
+            simStartDay = currentSceneDay;
+            solarSimStartDateMs = currentSolarDateMs;
             scrubDay = null;
             scrubSolarDateMs = null;
             paused = false;

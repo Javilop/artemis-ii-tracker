@@ -1,5 +1,5 @@
 id: iss
-label: ISS Decommission
+label: ISS 2030 yaml
 kind: earth-orbit
 vehicle: model
 vehicle_label: ISS
@@ -11,7 +11,7 @@ object:
   rotation_y: 1.5707963267948966
   render_order: 30
   radial_offset_km: 120
-  always_on_top: true
+  always_on_top: false
   lock_orientation_until_tumble: true
   edge_highlight:
     enabled: true
@@ -50,8 +50,8 @@ tumble_start_date: 2030-11-10T23:02:00Z
 tumble_speed_deg: 0.4
 tumble_axes: [0.42, 0.27, 0.58]
 follow_label: Follow ISS
-mission_name: ISS DECOMMISSION
-browser_title: ISS Decommission
+mission_name: International Space Station 2030
+browser_title: International Space Station 2030
 overview_label: Overview
 overview_view: earth
 start_date: 2030-11-07T00:00:00Z
@@ -63,7 +63,7 @@ path_color: '#9fe7ff'
 phase_labels: [Stable Orbit, Drag Build, Lowering, Final Orbit, Reentry, South Pacific]
 focus_cameras:
   earth:
-    position_offset: [0, 8, 22]
+    position_offset: [0, 3.5, 10]
     target_offset: [0, 0, 0]
 initial_camera:
   relative: true
