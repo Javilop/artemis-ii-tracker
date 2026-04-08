@@ -808,6 +808,22 @@
             width: 100%; position: relative; margin-bottom: 12px;
             height: 16px; display: flex; align-items: center;
         }
+        .timeline-current-marker {
+            position: absolute;
+            top: -4px;
+            bottom: -4px;
+            width: 2px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.68);
+            box-shadow: 0 0 10px rgba(255,255,255,0.18);
+            transform: translateX(-50%);
+            pointer-events: none;
+            display: none;
+            z-index: 1;
+        }
+        .timeline-current-marker.visible {
+            display: block;
+        }
         .timeline-marker {
             position: absolute;
             top: -4px;
@@ -828,6 +844,8 @@
             width: 100%; height: 3px; border-radius: 2px; outline: none;
             cursor: pointer; pointer-events: auto;
             background: rgba(255,255,255,0.08);
+            position: relative;
+            z-index: 2;
         }
         .timeline-slider::-webkit-slider-thumb {
             -webkit-appearance: none; appearance: none;
@@ -1408,6 +1426,7 @@
                 </div>
             </div>
             <div class="progress-track" id="progress-track">
+                <div class="timeline-current-marker" id="timeline-current-marker" aria-hidden="true"></div>
                 <div class="timeline-marker" id="timeline-marker-arrive" aria-hidden="true"></div>
                 <div class="timeline-marker" id="timeline-marker-depart" aria-hidden="true"></div>
                 <input type="range" class="timeline-slider" id="timeline-slider"
@@ -6997,6 +7016,7 @@
             const metDisplayEl = document.getElementById('met-display');
             const missionNameEl = document.getElementById('mission-name');
             const timelineSliderEl = document.getElementById('timeline-slider');
+            const currentTimeMarkerEl = document.getElementById('timeline-current-marker');
             const arriveMarkerEl = document.getElementById('timeline-marker-arrive');
             const departMarkerEl = document.getElementById('timeline-marker-depart');
             const phaseTextEl = document.getElementById('phase-text');
@@ -7072,6 +7092,14 @@
                 } else {
                     toggleClassIfChanged(arriveMarkerEl, 'visible', false);
                     toggleClassIfChanged(departMarkerEl, 'visible', false);
+                }
+            }
+            if (currentTimeMarkerEl) {
+                const missionHasStarted = currentEventStartMs <= Date.now();
+                const markerVisible = missionHasStarted && missionTimelineMs >= currentEventStartMs && missionTimelineMs <= currentEventEndMs;
+                toggleClassIfChanged(currentTimeMarkerEl, 'visible', markerVisible);
+                if (markerVisible) {
+                    setStyleIfChanged(currentTimeMarkerEl, 'left', `${pct}%`);
                 }
             }
 
