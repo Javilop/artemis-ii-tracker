@@ -20,6 +20,16 @@
                 starlinkgen1: 'starlink-gen1.yaml'
             };
             const EVENT_IDS = new Set(Object.keys(EVENT_SPEC_FILES));
+            const EVENT_LABELS_BOOTSTRAP = {
+                starman2018: 'Starman 2018',
+                starlinkgen1: 'Starlink Satellite',
+                orion2026: 'Orion 2026',
+                iss: 'ISS 2030',
+                mars2033: 'Mars 2033',
+                futurama2100: 'Futurama 2100',
+                fireballs2333: 'Fireballs 2333',
+            };
+            const EVENT_IDS_ORDERED = ['starman2018', 'orion2026', 'iss', 'mars2033', 'futurama2100', 'fireballs2333', 'starlinkgen1'];
             const origin = window.location.origin || '';
             const hostname = window.location.hostname || '';
             const useNautProfile = hostname.includes('dream') || origin.includes('localhost:8887');
@@ -104,7 +114,9 @@
                 if (solarSystemButton) solarSystemButton.style.display = meta.showSolarSystem === false ? 'none' : '';
                 if (eventSelect) {
                     if (eventSelect.options.length <= 1) {
-                        eventSelect.innerHTML = `<option value="${meta.eventId}">${meta.label}</option>`;
+                        eventSelect.innerHTML = EVENT_IDS_ORDERED.map((id) =>
+                            `<option value="${id}" data-follow-hash="">${EVENT_LABELS_BOOTSTRAP[id] || id}</option>`
+                        ).join('');
                     }
                     eventSelect.value = meta.eventId;
                 }
@@ -1637,7 +1649,6 @@
             futurama2100: 'futurama2100.yaml',
             fireballs2333: 'fireballs2333.yaml',
         };
-        // Is this addition to #event waiting for DOM
         const EVENT_LABELS = {
             starman2018: 'Starman 2018',
             starlinkgen1: 'Starlink Satellite',
@@ -3422,9 +3433,11 @@
         function hydrateEventMenu(selectedEventId = null) {
             const select = document.getElementById('event');
             if (!select) return;
-            select.innerHTML = EVENT_IDS.map((id) =>
-                `<option value="${id}" data-follow-hash="">${EVENT_LABELS[id] || id}</option>`
-            ).join('');
+            if (select.options.length <= 1) {
+                select.innerHTML = EVENT_IDS.map((id) =>
+                    `<option value="${id}" data-follow-hash="">${EVENT_LABELS[id] || id}</option>`
+                ).join('');
+            }
             if (selectedEventId && EVENT_OPTIONS.has(selectedEventId)) {
                 select.value = selectedEventId;
             }
@@ -7364,7 +7377,6 @@
         animate();
         initializeApp()
             .then(() => {
-                hydrateEventMenu(currentEventId);
                 if (currentEventKind === 'orion') {
                     setTrajectorySourceLabel('Loading NASA AROW Ephemeris...');
                     ensureOrionArowLoaded();
