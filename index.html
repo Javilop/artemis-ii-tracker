@@ -1695,8 +1695,8 @@
         const SOLAR_ORBIT_TUBE_MIN = 12;
         const SOLAR_ORBIT_TUBE_MAX = 38;
         const DEFAULT_SOLAR_DATE = new Date();
-        const NASA_AROW_POST_API = 'https://www.nasa.gov/wp-json/wp/v2/posts/943368';
-        const NASA_AROW_HISTORIC_DEFAULT_SOURCE = './paths/artemis-ii-oem-2026-04-02-to-ei-v3.zip';
+        const DEFAULT_NASA_AROW_POST_API = 'https://www.nasa.gov/wp-json/wp/v2/posts/943368';
+        const DEFAULT_NASA_AROW_HISTORIC_SOURCES = [];
         const NASA_AROW_FETCH_TIMEOUT_MS = 12000;
         const DEFAULT_SOLAR_DATE_MS = Date.UTC(
             DEFAULT_SOLAR_DATE.getUTCFullYear(),
@@ -1738,6 +1738,7 @@
         let currentEventInitialCameraAnchorBody = 'event';
         let currentEventPreserveStartupCamera = false;
         let currentEventPhaseLabels = null;
+        let currentEventNeedsStartPrompt = false;
         let currentEventFocusCameras = {};
         let currentEventFocusMoonEarthBackground = true;
         let currentEventFollowCamera = null;
@@ -1939,6 +1940,8 @@
         const TRAJ_N = NASA_TRAJ.length; // 107 points
         let liveTrajectorySamples = [];
         let historicTrajectorySamples = [];
+        let historicTrajectorySourceKey = '';
+        let liveTrajectoryPostApiKey = '';
 
         // Catmull-Rom interpolation for smooth curve through real data
         function catmullRom(p0, p1, p2, p3, t) {
@@ -2327,6 +2330,32 @@
             if (el) el.innerHTML = `Trajectory Data:<br><span style="text-transform:none">${text}</span>`;
         }
 
+        function normalizeTrajectorySourcePath(path) {
+            const rawPath = `${path || ''}`.trim();
+            if (!rawPath) return '';
+            if (/^https?:\/\//i.test(rawPath) || rawPath.startsWith('./') || rawPath.startsWith('../')) {
+                return rawPath;
+            }
+            return `./${rawPath.replace(/^\/+/, '')}`;
+        }
+
+        function getCurrentHistoricTrajectorySources() {
+            const configuredPaths = Array.isArray(currentEventSpec?.trajectoryPaths) && currentEventSpec.trajectoryPaths.length
+                ? currentEventSpec.trajectoryPaths
+                : DEFAULT_NASA_AROW_HISTORIC_SOURCES;
+            return configuredPaths
+                .map(normalizeTrajectorySourcePath)
+                .filter(Boolean);
+        }
+
+        function getCurrentHistoricTrajectorySourceKey() {
+            return getCurrentHistoricTrajectorySources().join('|');
+        }
+
+        function getCurrentLiveTrajectoryPostApi() {
+            return `${currentEventSpec?.liveTrajectoryPostApi || DEFAULT_NASA_AROW_POST_API}`.trim();
+        }
+
         function extractArowZipUrl(postPayload) {
             const rendered = postPayload?.content?.rendered || '';
             const match = rendered.match(/https:\/\/www\.nasa\.gov\/wp-content\/uploads\/[^"'\\s<>]*artemis-ii-oem[^"'\\s<>]*\.zip(?:\?[^"'\\s<>]*)?/i);
@@ -2357,6 +2386,17 @@
                 });
             }
             return samples;
+        }
+
+        function mergeTrajectorySamples(sampleCollections) {
+            const merged = new Map();
+            for (const samples of sampleCollections) {
+                for (const sample of samples) {
+                    if (!Number.isFinite(sample?.timeMs)) continue;
+                    merged.set(sample.timeMs, sample);
+                }
+            }
+            return [...merged.values()].sort((a, b) => a.timeMs - b.timeMs);
         }
 
         async function fetchWithTimeout(url, options = {}, timeoutMs = NASA_AROW_FETCH_TIMEOUT_MS) {
@@ -2401,17 +2441,27 @@
         }
 
         async function loadHistoricArowTrajectory() {
-            const samples = await loadArowSamplesFromSource(NASA_AROW_HISTORIC_DEFAULT_SOURCE);
+            const sourceUrls = getCurrentHistoricTrajectorySources();
+            if (!sourceUrls.length) {
+                throw new Error('No Orion historic trajectory sources configured for this event.');
+            }
+            const sampleCollections = [];
+            for (const sourceUrl of sourceUrls) {
+                sampleCollections.push(await loadArowSamplesFromSource(sourceUrl));
+            }
+            const samples = mergeTrajectorySamples(sampleCollections);
             historicTrajectorySamples = samples;
+            historicTrajectorySourceKey = getCurrentHistoricTrajectorySourceKey();
             setTrajectorySourceLabel(getActiveTrajectorySourceLabel());
             console.info('Loaded NASA AROW historic default trajectory.', {
                 samples: samples.length,
-                sourceUrl: NASA_AROW_HISTORIC_DEFAULT_SOURCE
+                sourceUrls
             });
         }
 
         async function loadLiveArowTrajectory() {
-            const postResponse = await fetchWithTimeout(NASA_AROW_POST_API, {
+            const postApiUrl = getCurrentLiveTrajectoryPostApi();
+            const postResponse = await fetchWithTimeout(postApiUrl, {
                 headers: { Accept: 'application/json' }
             });
             if (!postResponse.ok) {
@@ -2422,9 +2472,11 @@
             const zipUrl = extractArowZipUrl(postPayload);
             const samples = await loadArowSamplesFromSource(zipUrl);
             liveTrajectorySamples = samples;
+            liveTrajectoryPostApiKey = postApiUrl;
             setTrajectorySourceLabel(getActiveTrajectorySourceLabel());
             console.info('Loaded live NASA AROW trajectory.', {
                 samples: samples.length,
+                postApiUrl,
                 zipUrl
             });
         }
@@ -2456,6 +2508,11 @@
             if (currentEventKind !== 'orion') {
                 return Promise.resolve(false);
             }
+            const sourceKey = getCurrentHistoricTrajectorySourceKey();
+            if (historicTrajectorySourceKey && historicTrajectorySourceKey !== sourceKey) {
+                historicTrajectorySamples = [];
+                historicTrajectorySourceKey = '';
+            }
             if (historicTrajectorySamples.length >= 2) {
                 setTrajectorySourceLabel(getActiveTrajectorySourceLabel());
                 return Promise.resolve(true);
@@ -2476,6 +2533,11 @@
         function ensureOrionArowLoaded() {
             if (currentEventKind !== 'orion') {
                 return Promise.resolve(false);
+            }
+            const livePostApiKey = getCurrentLiveTrajectoryPostApi();
+            if (liveTrajectoryPostApiKey && liveTrajectoryPostApiKey !== livePostApiKey) {
+                liveTrajectorySamples = [];
+                liveTrajectoryPostApiKey = '';
             }
             const tasks = [];
             if (historicTrajectorySamples.length < 2) {
@@ -3364,6 +3426,21 @@
             });
         }
 
+        // Space-specific wait helper:
+        // - Id + callback only, unlike localsite.js waitForElm(selector)'s Promise API.
+        // - Uses requestAnimationFrame polling, so it can run before DOMContentLoaded.
+        // - localsite.js usually resolves immediately or via MutationObserver; it only falls back to DOMContentLoaded
+        //   before body exists.
+        function waitForElmSpace(id, onReady, remainingFrames = 120) {
+            const element = document.getElementById(id);
+            if (element) {
+                onReady(element);
+                return;
+            }
+            if (remainingFrames <= 0) return;
+            requestAnimationFrame(() => waitForElmSpace(id, onReady, remainingFrames - 1));
+        }
+
         function setFocusHash(focus) {
             updateHashParams((params) => {
                 params.delete('follow');
@@ -3699,10 +3776,27 @@
             };
         }
 
+        function normalizeEventTrajectoryPaths(rawTrajectory, rawSpec) {
+            const candidates = [];
+            if (rawTrajectory) {
+                if (Array.isArray(rawTrajectory.paths)) candidates.push(...rawTrajectory.paths);
+                if (rawTrajectory.path !== undefined) candidates.push(rawTrajectory.path);
+            }
+            if (Array.isArray(rawSpec.trajectory_paths)) candidates.push(...rawSpec.trajectory_paths);
+            if (rawSpec.trajectory_path !== undefined) candidates.push(rawSpec.trajectory_path);
+            return candidates
+                .map((value) => `${value || ''}`.trim())
+                .filter(Boolean);
+        }
+
         function normalizeEventSpec(rawSpec, missionId) {
             const spec = rawSpec && typeof rawSpec === 'object' ? rawSpec : {};
             const vehicle = spec.vehicle || 'sphere';
             const phaseLabels = Array.isArray(spec.phase_labels) ? spec.phase_labels.map(label => `${label ?? ''}`) : null;
+            const trajectoryPaths = normalizeEventTrajectoryPaths(spec.trajectory, spec);
+            const orionSceneStartSource = spec.kind === 'orion' && spec.start_date !== undefined
+                ? spec.start_date
+                : spec.solar_start_date;
             const followHash = sanitizeHashSlug(
                 spec.object_name || spec.follow_hash || spec.object?.name || phaseLabels?.find(label => `${label}`.trim()) || missionId,
                 missionId
@@ -3778,7 +3872,9 @@
                     lonDeg: Number(spec.landing_site.lon_deg),
                     altitudeKm: Number.isFinite(Number(spec.landing_site.altitude_km)) ? Number(spec.landing_site.altitude_km) : 18
                 } : null,
-                solarStartDateMs: parseEventDateMs(spec.solar_start_date, null),
+                sceneStartOverrideMs: parseEventDateMs(orionSceneStartSource, null),
+                trajectoryPaths,
+                liveTrajectoryPostApi: `${spec.trajectory?.live_post_api || spec.live_trajectory_post_api || ''}`.trim(),
                 orbit: spec.orbit ? {
                     semiMajorAxisAu: Number(spec.orbit.semi_major_axis_au) || 0,
                     eccentricity: Number(spec.orbit.eccentricity) || 0,
@@ -3805,9 +3901,11 @@
 
             if (normalized.kind === 'orion') {
                 normalized.launchTimeMs = Date.parse(spec.launch_time);
-                normalized.missionDays = Number(spec.mission_days) || 10;
                 normalized.startMs = normalized.launchTimeMs;
-                normalized.endMs = normalized.launchTimeMs + normalized.missionDays * MS_PER_DAY;
+                const fallbackMissionDays = Number(spec.mission_days) || 10;
+                const fallbackEndMs = normalized.launchTimeMs + fallbackMissionDays * MS_PER_DAY;
+                normalized.endMs = parseEventDateMs(spec.end_date, fallbackEndMs);
+                normalized.missionDays = Math.max(1 / 86400, (normalized.endMs - normalized.startMs) / MS_PER_DAY);
             } else if (normalized.kind === 'mars') {
                 normalized.departEarthMs = Date.parse(spec.depart_earth);
                 normalized.arriveTargetMs = Date.parse(spec.arrive_target);
@@ -4766,8 +4864,22 @@
             return isNarrowUi() ? nextLabel.replace(/\s+Overview$/i, '') || nextLabel : nextLabel;
         }
 
+        function getOverviewActionLabel(label) {
+            const nextLabel = getResponsiveOverviewLabel(label);
+            return nextLabel.replace(/\s+Overview$/i, '').trim() || 'Mission';
+        }
+
         function updateOverviewButtonText() {
             document.getElementById('btn-overview').textContent = getResponsiveOverviewLabel(currentEventOverviewLabel);
+        }
+
+        function updateRestartButtonText() {
+            const nextLabel = currentEventNeedsStartPrompt
+                ? `Start ${getOverviewActionLabel(currentEventOverviewLabel)}`
+                : 'Restart';
+            waitForElmSpace('btn-restart-overlay', (button) => {
+                button.textContent = nextLabel;
+            });
         }
 
         function updateVehicleLabels() {
@@ -4917,9 +5029,10 @@
             currentEventSegments = spec.kind === 'custom' ? buildCustomEventSegments(currentEventRoute) : [];
             currentEventSceneStartMs = Number.isFinite(spec.sceneStartMs)
                 ? spec.sceneStartMs
-                : (Number.isFinite(spec.solarStartDateMs) ? spec.solarStartDateMs : spec.startMs);
+                : (Number.isFinite(spec.sceneStartOverrideMs) ? spec.sceneStartOverrideMs : spec.startMs);
             currentEventStartMs = spec.startMs;
             currentEventEndMs = spec.endMs;
+            currentEventNeedsStartPrompt = currentEventEndMs <= Date.now();
             lastMoonOrbitRefreshMs = null;
             lastMoonOrbitNormal = null;
             eventModelLockedQuaternion = null;
@@ -4961,6 +5074,7 @@
             updateHeaderText();
             updateVehicleLabels();
             updateEventVideoPanel();
+            updateRestartButtonText();
             scheduleEventObjectLoad(currentEventObject);
             mars2033TransferLine.material.color.set(currentEventPathColor);
             mars2033TransferGlow.material.color.set(currentEventPathColor);
@@ -5477,7 +5591,27 @@
         }
 
         function setRestartButtonVisible(visible) {
-            document.getElementById('btn-restart-overlay').classList.toggle('visible', visible);
+            updateRestartButtonText();
+            waitForElmSpace('btn-restart-overlay', (button) => {
+                button.classList.toggle('visible', visible);
+            });
+        }
+
+        function dismissStartPrompt() {
+            if (!currentEventNeedsStartPrompt) return;
+            currentEventNeedsStartPrompt = false;
+            updateRestartButtonText();
+        }
+
+        function getPlaybackResumeSpeed() {
+            return speedMult <= 1 ? currentEventPlaySpeed : speedMult;
+        }
+
+        function isAtOrPastEventEnd(now = Date.now()) {
+            if (currentEventKind === 'orion') {
+                return getCurrentSceneDay(now) >= MISSION_DAYS - 0.001;
+            }
+            return getCurrentSolarDateMs(now) >= currentEventEndMs - 1000;
         }
 
         function setCloseUpButtonVisible(visible) {
@@ -5539,9 +5673,8 @@
 
         window.restartCurrentEvent = () => {
             const now = Date.now();
-            const restartSpeed = currentEventKind === 'orion'
-                ? Math.max(1, speedMult || 1)
-                : Math.max(1, currentEventFollowSpeed || speedMult || 1);
+            dismissStartPrompt();
+            const restartSpeed = Math.max(1, getPlaybackResumeSpeed());
             speedMult = restartSpeed;
             paused = false;
             pausedDay = null;
@@ -5984,6 +6117,7 @@
         window.setSpeed = (spd) => {
             const now = Date.now();
             const preserveCurrentMissionTime = activeView === 'event';
+            dismissStartPrompt();
             const currentSceneDay = getCurrentSceneDay(now);
             const currentSolarDateMs = getCurrentSolarDateMs(now);
 
@@ -6043,6 +6177,7 @@
         };
 
         window.onSliderChange = (val) => {
+            dismissStartPrompt();
             const spd = sliderToSpeed(Number(val));
             // Keep simStartReal but recalculate simStartDay from current simDay
             const now = Date.now();
@@ -6067,8 +6202,14 @@
         window.togglePlayback = () => {
             const now = Date.now();
             if (paused || scrubDay !== null || scrubSolarDateMs !== null) {
+                if (isAtOrPastEventEnd(now)) {
+                    window.restartCurrentEvent();
+                    return;
+                }
+                dismissStartPrompt();
+                const resumeSpeed = getPlaybackResumeSpeed();
                 if (speedMult <= 1) {
-                    setSpeed(currentEventPlaySpeed);
+                    setSpeed(resumeSpeed);
                 }
                 const resumeDay = scrubDay !== null ? scrubDay : pausedDay;
                 simStartDay = Math.max(0, resumeDay ?? getCurrentSceneDay(now));
@@ -6151,6 +6292,7 @@
         }
 
         window.onTimelineScrub = (val) => {
+            dismissStartPrompt();
             const preserveMotion = Boolean(
                 timelineSliderPointerState &&
                 !timelineSliderPointerState.dragged &&
@@ -7234,7 +7376,7 @@
                 : currentEventKind === 'orion'
                 ? hudDay >= MISSION_DAYS - 0.001
                 : missionTimelineMs >= currentEventEndMs - 1000;
-            setRestartButtonVisible(currentEventComplete);
+            setRestartButtonVisible(currentEventComplete || currentEventNeedsStartPrompt);
             if (currentEventComplete && !paused) {
                 paused = true;
                 simStartReal = null;
