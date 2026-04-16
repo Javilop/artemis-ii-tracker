@@ -561,10 +561,14 @@
         .timeline-header {
             display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;
         }
+        .timeline-title-group {
+            display: flex; align-items: center; gap: 8px;
+        }
         .timeline-title {
             font-size: 9px; font-weight: 700; letter-spacing: 2px;
             text-transform: uppercase; color: rgba(255,255,255,0.3);
         }
+<<<<<<< HEAD
         .timeline-met-wrap {
             display: flex;
             align-items: center;
@@ -572,6 +576,17 @@
             gap: 8px;
             min-width: 0;
         }
+=======
+        .timeline-reset {
+            font-size: 8px; font-weight: 600; letter-spacing: 1px;
+            text-transform: uppercase; color: #6ec6ff;
+            background: rgba(110,198,255,0.1); border: 1px solid rgba(110,198,255,0.25);
+            border-radius: 6px; padding: 3px 8px; cursor: pointer;
+            display: none; pointer-events: auto;
+            transition: background 0.2s;
+        }
+        .timeline-reset:hover { background: rgba(110,198,255,0.25); }
+>>>>>>> upstream/main
         .timeline-met {
             font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; color: #6ec6ff;
         }
@@ -1083,6 +1098,7 @@
             font-size: 10px; color: rgba(255,255,255,0.15); letter-spacing: 2px;
             pointer-events: none; z-index: 5;
         }
+<<<<<<< HEAD
         #timeline-footer {
             position: absolute;
             left: 0;
@@ -1320,6 +1336,60 @@
                 max-height: none;
                 overflow: auto;
             }
+=======
+
+        /* ═══ MOBILE ═══ */
+        @media (max-width: 768px) {
+            #hud { padding: 14px 16px; }
+            .mission-title { font-size: 9px; letter-spacing: 3px; }
+            .mission-name { font-size: 24px; }
+            .mission-status { font-size: 9px; letter-spacing: 1.5px; }
+            .met-counter { font-size: 10px; }
+
+            #controls-hint {
+                top: 14px; right: 12px; gap: 3px;
+            }
+            .hint-btn {
+                padding: 5px 10px; font-size: 9px;
+                min-width: 105px; border-radius: 6px;
+            }
+            .sim-slider-wrap input[type="range"] { width: 80px; }
+            .sim-slider-label { font-size: 9px; min-width: 40px; }
+
+            /* Bottom panel: flex column, consistent spacing */
+            #bottom-panel {
+                position: fixed; bottom: 0; left: 0; right: 0;
+                z-index: 10; display: flex; flex-direction: column;
+                gap: 6px; padding: 6px 10px;
+                pointer-events: none;
+            }
+            #telemetry {
+                position: static; pointer-events: none;
+            }
+            .telem-grid {
+                grid-template-columns: repeat(4, 1fr); gap: 4px;
+            }
+            .telem-card {
+                padding: 5px 6px; min-width: unset;
+                border-radius: 6px;
+            }
+            .telem-label { font-size: 6px; letter-spacing: 0.5px; margin-bottom: 1px; }
+            .telem-value { font-size: 12px; }
+            .telem-unit { font-size: 7px; }
+
+            #timeline {
+                position: static; width: auto;
+                pointer-events: auto;
+            }
+            .timeline-bar {
+                padding: 10px 14px; border-radius: 10px;
+            }
+            .timeline-header { margin-bottom: 8px; }
+            .timeline-title { font-size: 8px; }
+            .timeline-reset { font-size: 7px; padding: 2px 6px; }
+            .timeline-met { font-size: 11px; }
+            .phase-label { font-size: 7px; }
+>>>>>>> upstream/main
         }
     </style>
 </head>
@@ -1366,6 +1436,7 @@
     <select class="hint-select" id="event" onchange="onEventChange(this.value)" aria-hidden="true" tabindex="-1"></select>
 
 
+    <div id="bottom-panel">
     <div id="telemetry">
         <div class="telem-grid">
             <div class="telem-card" id="telem-card-earth" onclick="toggleTelemetryDistanceCard()">
@@ -1431,6 +1502,7 @@
         </div>
         <div class="timeline-bar">
             <div class="timeline-header">
+<<<<<<< HEAD
                 <div class="timeline-title" id="timeline-title-text">Mission Time</div>
                 <div class="timeline-met-wrap" id="timeline-met-wrap">
                     <div class="timeline-met" id="met-display" onclick="toggleTimelineDateEditor(event)">—</div>
@@ -1443,6 +1515,13 @@
                     <input class="timeline-date-input" type="date" id="planet-date-input"
                            onchange="onPlanetDateChange(this.value)">
                 </div>
+=======
+                <div class="timeline-title-group">
+                    <div class="timeline-title">Mission Time</div>
+                    <button class="timeline-reset" id="timeline-reset-btn" onclick="resetToLive()">Reset</button>
+                </div>
+                <div class="timeline-met" id="met-display">—</div>
+>>>>>>> upstream/main
             </div>
             <div class="progress-track" id="progress-track">
                 <div class="timeline-current-marker" id="timeline-current-marker" aria-hidden="true"></div>
@@ -1462,6 +1541,7 @@
             </div>
         </div>
     </div>
+    </div><!-- /bottom-panel -->
 
     <div id="timeline-footer" aria-hidden="true">
         <div id="timeline-footer-pan-slot">
@@ -1642,6 +1722,7 @@
         import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+<<<<<<< HEAD
         import { unzipSync, strFromU8 } from 'https://cdn.jsdelivr.net/npm/fflate@0.8.2/esm/browser.js';
         import yaml from 'https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/+esm';
 
@@ -1660,6 +1741,9 @@
             ? window.__initialEventId
             : DEFAULT_EVENT_ID;
         const INITIAL_EVENT_SPEC_TEXT_PROMISE = window.__initialEventSpecTextPromise || null;
+=======
+        import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+>>>>>>> upstream/main
 
         // ═══════════════════════════════════════════
         // CONSTANTS
@@ -1670,12 +1754,19 @@
         const EARTH_MU_KM3_S2 = 398600.4418;
         const EARTH_MOON_DIST_KM = 384400;
         const SCALE = 1 / 4000; // 1 unit = 4000 km
+<<<<<<< HEAD
         const AU_KM = 149597870.7;
         const MS_PER_DAY = 86400000;
         const JD_J2000 = 2451545.0;
         let LAUNCH_TIME = Date.UTC(2026, 3, 1, 22, 35, 0);
         let MISSION_DAYS = 10;
         let MISSION_DURATION_MS = MISSION_DAYS * MS_PER_DAY;
+=======
+        const LAUNCH_TIME = Date.UTC(2026, 3, 1, 22, 35, 0);
+        const MISSION_DAYS = 10;
+        const MISSION_DURATION_MS = MISSION_DAYS * 86400000;
+        const J2000_MS = Date.UTC(2000, 0, 1, 12, 0, 0); // J2000.0 epoch
+>>>>>>> upstream/main
 
         // Real scale for bodies — only Orion is exaggerated
         const sR = SUN_RADIUS_KM * SCALE; // ~173.9
@@ -1959,7 +2050,8 @@
 
         // Convert Horizons EME2000 [X,Y,Z] → Three.js [X,Z,Y] (Y-up)
         function horizonsToThree(d) {
-            return new THREE.Vector3(d[0], d[2], d[1]);
+            // EME2000 [X,Y,Z] → Three.js [X,Z,-Y] (right-handed Y-up)
+            return new THREE.Vector3(d[0], d[2], -d[1]);
         }
 
         // Embedded Moon vectors were sampled from Horizons in the ecliptic plane.
@@ -2598,8 +2690,13 @@
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.dampingFactor = 0.06;
+<<<<<<< HEAD
         controls.minDistance = 0.5;
         controls.maxDistance = 1200000;
+=======
+        controls.minDistance = 0.01;
+        controls.maxDistance = 1200;
+>>>>>>> upstream/main
         controls.target.set(44, 0, -15);
 
         controls.addEventListener('change', () => {
@@ -2802,13 +2899,14 @@
                     vec3 viewDir = normalize(cameraPosition - vWorldPos);
                     float rim = 1.0 - max(0.0, dot(viewDir, vNormal));
                     float intensity = coeff * pow(rim, power);
-                    gl_FragColor = vec4(glowColor, intensity * 0.55);
+                    gl_FragColor = vec4(glowColor, intensity * 0.1);
                 }
             `
         });
         const earthAtmosphereMesh = new THREE.Mesh(atmosGeo, atmosMat);
         earthGroup.add(earthAtmosphereMesh);
 
+<<<<<<< HEAD
         // Outer glow halo (large for overview visibility)
         const outerGlowGeo = new THREE.SphereGeometry(eR * 2.5, 32, 16);
         const outerGlowMat = new THREE.ShaderMaterial({
@@ -2837,6 +2935,9 @@
         });
         const earthOuterGlowMesh = new THREE.Mesh(outerGlowGeo, outerGlowMat);
         earthGroup.add(earthOuterGlowMesh);
+=======
+        // (outer glow removed — inner atmosphere is enough)
+>>>>>>> upstream/main
 
         // Earth beacon sprite — visible at overview distance
         let earthBeaconSprite = null;
@@ -2880,43 +2981,32 @@
             emissiveIntensity: 0.15
         });
 
+<<<<<<< HEAD
         textureLoader.load(
             'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/moon_1024.jpg',
             (tex) => {
+=======
+        // Moon texture — 4K from Solar System Scope / LROC imagery (CC-BY 4.0)
+        // Local file first, remote fallbacks
+        const moonTexUrls = [
+            'moon_4k.jpg',
+            'https://svs.gsfc.nasa.gov/vis/a000000/a004700/a004720/lroc_color_2k.jpg',
+            'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/moon_1024.jpg'
+        ];
+        (function tryMoonTex(i) {
+            if (i >= moonTexUrls.length) return;
+            textureLoader.load(moonTexUrls[i], (tex) => {
+>>>>>>> upstream/main
                 moonMat.map = tex;
                 moonMat.color.set(0xcccccc);
                 moonMat.needsUpdate = true;
-            }
-        );
+            }, undefined, () => tryMoonTex(i + 1));
+        })(0);
 
-        moonGroup.add(new THREE.Mesh(moonGeo, moonMat));
+        const moonMesh = new THREE.Mesh(moonGeo, moonMat);
+        moonGroup.add(moonMesh);
 
-        // Moon glow (extended for visibility)
-        const moonGlowGeo = new THREE.SphereGeometry(mR * 2.5, 32, 16);
-        const moonGlowMat = new THREE.ShaderMaterial({
-            transparent: true, side: THREE.BackSide, depthWrite: false,
-            uniforms: { glowColor: { value: new THREE.Color(0x888899) } },
-            vertexShader: `
-                varying vec3 vNormal;
-                varying vec3 vWorldPos;
-                void main() {
-                    vNormal = normalize(normalMatrix * normal);
-                    vWorldPos = (modelMatrix * vec4(position, 1.0)).xyz;
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                }
-            `,
-            fragmentShader: `
-                uniform vec3 glowColor;
-                varying vec3 vNormal;
-                varying vec3 vWorldPos;
-                void main() {
-                    vec3 viewDir = normalize(cameraPosition - vWorldPos);
-                    float rim = max(0.0, dot(viewDir, vNormal));
-                    gl_FragColor = vec4(glowColor, pow(rim, 1.5) * 0.3);
-                }
-            `
-        });
-        moonGroup.add(new THREE.Mesh(moonGlowGeo, moonGlowMat));
+        // (Moon has no atmosphere — glow removed)
 
         // Moon beacon sprite
         (() => {
@@ -2943,6 +3033,7 @@
         moonGroup.add(moonLabel);
         scene.add(moonGroup);
 
+<<<<<<< HEAD
         const moonOrbitReferenceLine = new THREE.Line(
             new THREE.BufferGeometry(),
             new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.07 })
@@ -2960,6 +3051,106 @@
             new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.32 })
         );
         moonOrbitVisualGroup.add(moonOrbitCurrentArc);
+=======
+        // Full Moon orbit — real JPL Horizons data (body 301, ECLIPTIC, 2h steps)
+        // Mar 15 03:00 → Apr 11 09:00, 2026 (27.3 days = 1 sidereal month, 329 points)
+        const MOON_ORBIT_FULL = [
+[228892,-317637,-19534],[234465,-313079,-18955],[239958,-308411,-18370],[245367,-303635,-17779],
+[250692,-298753,-17181],[255930,-293764,-16577],[261079,-288672,-15967],[266137,-283477,-15352],
+[271102,-278180,-14731],[275971,-272785,-14104],[280743,-267291,-13473],[285416,-261702,-12837],
+[289987,-256018,-12196],[294455,-250241,-11551],[298818,-244373,-10901],[303074,-238416,-10248],
+[307221,-232372,-9591],[311256,-226242,-8930],[315179,-220029,-8266],[318987,-213735,-7599],
+[322679,-207362,-6929],[326253,-200911,-6256],[329707,-194386,-5582],[333040,-187788,-4905],
+[336249,-181119,-4226],[339334,-174382,-3546],[342292,-167580,-2864],[345122,-160713,-2181],
+[347823,-153786,-1497],[350394,-146800,-813],[352832,-139758,-129],[355137,-132662,556],
+[357307,-125515,1240],[359340,-118320,1924],[361237,-111078,2607],[362995,-103794,3289],
+[364614,-96469,3970],[366092,-89107,4649],[367428,-81709,5327],[368622,-74280,6002],
+[369672,-66821,6675],[370579,-59336,7345],[371340,-51827,8013],[371956,-44298,8677],
+[372425,-36751,9338],[372747,-29189,9995],[372922,-21616,10648],[372949,-14035,11296],
+[372828,-6447,11940],[372558,1143,12580],[372139,8732,13214],[371571,16318,13843],
+[370854,23897,14466],[369988,31466,15083],[368972,39022,15694],[367807,46562,16299],
+[366494,54083,16897],[365031,61582,17487],[363420,69055,18071],[361661,76499,18647],
+[359754,83912,19216],[357700,91290,19776],[355499,98630,20329],[353153,105929,20873],
+[350661,113183,21408],[348025,120390,21934],[345245,127547,22451],[342323,134650,22958],
+[339259,141697,23456],[336055,148684,23944],[332711,155608,24422],[329229,162467,24890],
+[325610,169258,25347],[321856,175976,25794],[317968,182621,26229],[313947,189188,26654],
+[309795,195675,27067],[305514,202080,27469],[301106,208398,27859],[296571,214628,28237],
+[291912,220767,28603],[287131,226813,28957],[282230,232761,29299],[277211,238611,29629],
+[272075,244360,29945],[266826,250004,30249],[261465,255542,30541],[255994,260972,30819],
+[250415,266290,31084],[244732,271495,31335],[238946,276585,31574],[233060,281556,31799],
+[227076,286408,32010],[220997,291139,32208],[214825,295745,32392],[208564,300225,32563],
+[202215,304578,32719],[195781,308802,32862],[189266,312894,32990],[182672,316854,33105],
+[176001,320679,33206],[169256,324368,33292],[162442,327920,33364],[155559,331333,33423],
+[148612,334605,33467],[141602,337737,33497],[134534,340725,33512],[127410,343570,33514],
+[120233,346269,33502],[113007,348823,33475],[105733,351230,33434],[98416,353489,33379],
+[91058,355600,33311],[83663,357562,33228],[76233,359373,33131],[68772,361034,33020],
+[61283,362544,32896],[53769,363903,32758],[46233,365110,32606],[38677,366164,32441],
+[31107,367067,32262],[23523,367816,32069],[15930,368413,31864],[8331,368858,31645],
+[729,369149,31413],[-6874,369288,31168],[-14473,369275,30910],[-22067,369109,30639],
+[-29651,368792,30356],[-37223,368322,30060],[-44780,367702,29752],[-52319,366931,29432],
+[-59836,366010,29100],[-67330,364940,28756],[-74795,363721,28400],[-82231,362353,28033],
+[-89634,360839,27654],[-97000,359178,27264],[-104328,357371,26863],[-111614,355420,26451],
+[-118855,353326,26028],[-126049,351089,25595],[-133193,348711,25152],[-140284,346192,24699],
+[-147320,343535,24235],[-154297,340741,23762],[-161213,337810,23280],[-168066,334745,22788],
+[-174853,331546,22287],[-181571,328215,21777],[-188218,324755,21259],[-194791,321165,20732],
+[-201289,317449,20197],[-207708,313607,19654],[-214046,309642,19103],[-220302,305555,18545],
+[-226472,301349,17980],[-232555,297024,17407],[-238548,292583,16828],[-244449,288028,16242],
+[-250257,283361,15650],[-255969,278583,15052],[-261583,273698,14448],[-267097,268706,13838],
+[-272509,263611,13223],[-277818,258414,12603],[-283022,253117,11978],[-288119,247723,11349],
+[-293106,242234,10715],[-297984,236652,10077],[-302749,230980,9435],[-307401,225220,8790],
+[-311938,219373,8141],[-316358,213444,7489],[-320661,207433,6835],[-324844,201344,6177],
+[-328906,195179,5518],[-332847,188940,4856],[-336665,182631,4193],[-340358,176252,3528],
+[-343926,169807,2861],[-347369,163299,2194],[-350683,156730,1526],[-353870,150102,857],
+[-356927,143418,188],[-359855,136681,-481],[-362652,129893,-1150],[-365318,123057,-1819],
+[-367851,116176,-2487],[-370252,109252,-3154],[-372519,102287,-3819],[-374653,95284,-4484],
+[-376653,88247,-5147],[-378517,81177,-5808],[-380247,74077,-6466],[-381842,66950,-7123],
+[-383301,59799,-7777],[-384624,52626,-8428],[-385811,45433,-9076],[-386862,38223,-9721],
+[-387777,31000,-10362],[-388555,23765,-11000],[-389198,16521,-11634],[-389704,9271,-12263],
+[-390075,2017,-12888],[-390310,-5238,-13509],[-390409,-12492,-14125],[-390373,-19742,-14736],
+[-390203,-26985,-15342],[-389897,-34220,-15942],[-389458,-41442,-16537],[-388885,-48651,-17126],
+[-388179,-55844,-17709],[-387340,-63017,-18286],[-386369,-70169,-18857],[-385266,-77297,-19421],
+[-384033,-84399,-19978],[-382670,-91473,-20528],[-381177,-98515,-21072],[-379556,-105524,-21608],
+[-377807,-112498,-22137],[-375932,-119434,-22658],[-373931,-126329,-23171],[-371804,-133182,-23677],
+[-369554,-139990,-24174],[-367180,-146751,-24664],[-364685,-153463,-25144],[-362069,-160124,-25617],
+[-359333,-166731,-26081],[-356479,-173283,-26536],[-353507,-179777,-26982],[-350419,-186212,-27419],
+[-347217,-192584,-27847],[-343900,-198893,-28266],[-340472,-205137,-28675],[-336932,-211312,-29075],
+[-333283,-217418,-29465],[-329525,-223453,-29845],[-325661,-229414,-30215],[-321692,-235300,-30576],
+[-317619,-241109,-30926],[-313443,-246839,-31266],[-309167,-252489,-31596],[-304792,-258057,-31916],
+[-300319,-263540,-32225],[-295749,-268938,-32523],[-291086,-274249,-32811],[-286330,-279471,-33089],
+[-281482,-284603,-33355],[-276546,-289642,-33611],[-271521,-294589,-33856],[-266411,-299440,-34090],
+[-261217,-304195,-34312],[-255940,-308853,-34524],[-250582,-313411,-34725],[-245146,-317869,-34914],
+[-239632,-322225,-35092],[-234044,-326478,-35259],[-228382,-330627,-35415],[-222649,-334670,-35559],
+[-216846,-338606,-35692],[-210976,-342435,-35813],[-205040,-346154,-35923],[-199040,-349764,-36021],
+[-192979,-353262,-36108],[-186857,-356648,-36184],[-180678,-359921,-36248],[-174442,-363080,-36300],
+[-168153,-366124,-36341],[-161812,-369052,-36370],[-155421,-371863,-36388],[-148982,-374556,-36394],
+[-142497,-377131,-36389],[-135968,-379586,-36372],[-129398,-381922,-36343],[-122788,-384137,-36303],
+[-116140,-386230,-36252],[-109457,-388201,-36189],[-102741,-390050,-36114],[-95993,-391775,-36028],
+[-89216,-393377,-35931],[-82412,-394854,-35822],[-75583,-396207,-35702],[-68731,-397434,-35570],
+[-61858,-398535,-35428],[-54967,-399510,-35274],[-48059,-400359,-35109],[-41137,-401081,-34932],
+[-34203,-401676,-34745],[-27259,-402144,-34546],[-20307,-402484,-34337],[-13350,-402696,-34117],
+[-6389,-402781,-33885],[573,-402737,-33643],[7534,-402565,-33391],[14492,-402264,-33127],
+[21445,-401836,-32853],[28391,-401279,-32569],[35326,-400594,-32274],[42250,-399780,-31969],
+[49160,-398839,-31653],[56053,-397769,-31327],[62928,-396572,-30992],[69782,-395247,-30646],
+[76614,-393794,-30290],[83420,-392214,-29925],[90199,-390508,-29550],[96948,-388675,-29165],
+[103666,-386715,-28771],[110349,-384630,-28367],[116997,-382419,-27954],[123606,-380084,-27532],
+[130175,-377624,-27101],[136701,-375041,-26661],[143182,-372334,-26213],[149616,-369504,-25756],
+[156001,-366552,-25290],[162334,-363479,-24816],[168613,-360286,-24333],[174837,-356972,-23843],
+[181002,-353540,-23345],[187107,-349989,-22838],[193150,-346321,-22324],[199129,-342536,-21803],
+[205040,-338636,-21274],[210883,-334622,-20739],[216655,-330494,-20196],[222353,-326253,-19646],
+[227977,-321901,-19089]
+        ];
+        (() => {
+            const orbitPts = MOON_ORBIT_FULL.map(d => {
+                const p = horizonsToThree(d);
+                return new THREE.Vector3(p.x * SCALE, p.y * SCALE, p.z * SCALE);
+            });
+            scene.add(new THREE.Line(
+                new THREE.BufferGeometry().setFromPoints(orbitPts),
+                new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.2 })
+            ));
+        })();
+
+>>>>>>> upstream/main
 
         // ═══════════════════════════════════════════
         // TRAJECTORY
@@ -3024,12 +3215,46 @@
         let eventModelLoadedPath = '';
         let eventModelLockedQuaternion = null;
 
+<<<<<<< HEAD
         const eventModelLabel = createLabel('OBJECT', '#ff6b35');
         eventModelLabel.position.set(0, 0.6, 0);
         eventModelGroup.add(eventModelLabel);
 
         // Beacon sprite — ensures visibility regardless of GLB model scale
         let eventBeaconSprite;
+=======
+        // Load Orion 3D model (CC BY 4.0 — DeltaX / Cults3D)
+        const stlLoader = new STLLoader();
+        stlLoader.load('OrionFull.stl', (geo) => {
+            geo.computeVertexNormals();
+            geo.center();
+            const orionMesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
+                color: 0xc0c0cc, roughness: 0.35, metalness: 0.65,
+                emissive: 0x334455, emissiveIntensity: 0.3
+            }));
+            // STL is in mm (~338mm wide). Scale to ~0.06 scene units
+            const s = 0.00018;
+            orionMesh.scale.set(s, s, s);
+            // Capsule nose (STL +Z) → prograde (-Z in Three.js, where lookAt points)
+            orionMesh.rotation.x = Math.PI;
+            orionGroup.add(orionMesh);
+        });
+
+        // Engine glow (small but visible)
+        const engineGlow = new THREE.PointLight(0xff6b35, 2, 3);
+        engineGlow.position.set(0, 0.02, 0);
+        orionGroup.add(engineGlow);
+
+        // Tiny physical beacon
+        const beacon = new THREE.Mesh(
+            new THREE.SphereGeometry(0.008, 8, 8),
+            new THREE.MeshBasicMaterial({ color: 0xff8844 })
+        );
+        orionGroup.add(beacon);
+
+        // Beacon sprite — this is what makes Orion visible from afar
+        let beaconSprite;
+>>>>>>> upstream/main
         (() => {
             const c = document.createElement('canvas');
             c.width = 128; c.height = 128;
@@ -3043,11 +3268,19 @@
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, 128, 128);
             const tex = new THREE.CanvasTexture(c);
+<<<<<<< HEAD
             eventBeaconSprite = new THREE.Sprite(new THREE.SpriteMaterial({
                 map: tex, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false
             }));
             eventBeaconSprite.scale.set(2.2, 2.2, 1);
             eventModelGroup.add(eventBeaconSprite);
+=======
+            beaconSprite = new THREE.Sprite(new THREE.SpriteMaterial({
+                map: tex, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false
+            }));
+            beaconSprite.scale.set(1.5, 1.5, 1);
+            orionGroup.add(beaconSprite);
+>>>>>>> upstream/main
         })();
 
         eventModelGroup.visible = false;
@@ -3254,12 +3487,25 @@
         // ═══════════════════════════════════════════
         // LIGHTING
         // ═══════════════════════════════════════════
+        // Sun direction from JPL Horizons: geocentric EME2000, 2026-Apr-01
+        // X=1.4676e8, Y=2.596e7, Z=1.125e7 km → horizonsToThree → [X,Z,-Y]
+        // Normalized direction: [0.982, 0.075, -0.174]
+        const SUN_INIT_ANGLE = Math.atan2(-0.1737, 0.982); // ~-10° in XZ plane
+        const SUN_ELEVATION = 26;  // Y component: 0.075 * 350
+        const SUN_LIGHT_DIST = 350;
+        const SUN_SPRITE_DIST = 580;
+
         const sunDir = new THREE.DirectionalLight(0xffffff, 2.5);
-        sunDir.position.set(300, 80, -150);
+        sunDir.position.set(
+            Math.cos(SUN_INIT_ANGLE) * SUN_LIGHT_DIST,
+            SUN_ELEVATION,
+            Math.sin(SUN_INIT_ANGLE) * SUN_LIGHT_DIST
+        );
         scene.add(sunDir);
         scene.add(sunDir.target);
         scene.add(new THREE.AmbientLight(0x1a1a3a, 0.4));
 
+<<<<<<< HEAD
         sunSceneGroup = new THREE.Group();
         sunSceneGroup.position.copy(SOLAR_CENTER);
         sunSceneGroup.frustumCulled = false;
@@ -3279,6 +3525,10 @@
         sunSceneCore.renderOrder = 41;
         sunSceneGroup.add(sunSceneCore);
 
+=======
+        // Sun glow sprite with procedural circular texture
+        let sunSprite;
+>>>>>>> upstream/main
         (() => {
             const c = document.createElement('canvas');
             c.width = 256; c.height = 256;
@@ -3292,6 +3542,7 @@
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, 256, 256);
             const tex = new THREE.CanvasTexture(c);
+<<<<<<< HEAD
             sunSceneGlow = new THREE.Sprite(new THREE.SpriteMaterial({
                 map: tex,
                 transparent: true,
@@ -3305,6 +3556,18 @@
             sunSceneGlow.frustumCulled = false;
             sunSceneGlow.renderOrder = 42;
             sunSceneGroup.add(sunSceneGlow);
+=======
+            sunSprite = new THREE.Sprite(new THREE.SpriteMaterial({
+                map: tex, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending
+            }));
+            sunSprite.position.set(
+                Math.cos(SUN_INIT_ANGLE) * SUN_SPRITE_DIST,
+                SUN_ELEVATION * (SUN_SPRITE_DIST / SUN_LIGHT_DIST),
+                Math.sin(SUN_INIT_ANGLE) * SUN_SPRITE_DIST
+            );
+            sunSprite.scale.set(40, 40, 1);
+            scene.add(sunSprite);
+>>>>>>> upstream/main
         })();
 
         // ═══════════════════════════════════════════
@@ -4642,7 +4905,11 @@
         // ═══════════════════════════════════════════
         // STATE & CONTROLS
         // ═══════════════════════════════════════════
+<<<<<<< HEAD
         // Camera modes: 'free', 'follow-orion', 'focus-earth', 'focus-moon', 'earth-moon', 'solar-system', 'mission'
+=======
+        // Camera modes: 'free', 'follow-orion', 'follow-moon', 'overview'
+>>>>>>> upstream/main
         let cameraMode = 'free';
         let activeView = 'earth-moon';
         let speedMult = 1;
@@ -5779,9 +6046,15 @@
             }
         };
 
+<<<<<<< HEAD
         window.focusEarth = (updateHash = true) => {
             cameraMode = 'focus-earth';
             syncActiveButtons();
+=======
+        window.focusMoon = () => {
+            cameraMode = 'follow-moon';
+            clearActiveButtons();
+>>>>>>> upstream/main
             controls.enabled = true;
             zoomForwardAmount = 0;
             resetTrackedPanOffset();
@@ -5796,6 +6069,7 @@
             cameraMode = 'focus-moon';
             syncActiveButtons();
             controls.enabled = true;
+<<<<<<< HEAD
             zoomForwardAmount = 0;
             resetTrackedPanOffset();
             const mp = moonGroup.position.clone();
@@ -5803,6 +6077,12 @@
             targetPos = focusCamera.position;
             targetLook = focusCamera.target;
             if (updateHash) setFocusHash('moon');
+=======
+            const mid = moonGroup.position.clone().multiplyScalar(0.35);
+            mid.y = 0;
+            targetPos = new THREE.Vector3(mid.x, 180, mid.z + 110);
+            targetLook = mid.clone();
+>>>>>>> upstream/main
         };
 
         window.focusEarthMoon = (updateHash = true) => {
@@ -6242,10 +6522,31 @@
             pausedDay = null;
             pausedSolarDateMs = null;
             scrubDay = null;
+<<<<<<< HEAD
             scrubSolarDateMs = null;
             hideResetButton();
             refreshSpeedControls();
             updatePlaybackButton();
+=======
+            document.getElementById('btn-sim').classList.remove('sim-active');
+            document.getElementById('btn-sim').textContent = 'Simulate Travel';
+            document.getElementById('btn-reset').style.display = 'none';
+            document.getElementById('sim-slider-wrap').classList.remove('visible');
+            document.getElementById('timeline-reset-btn').style.display = 'none';
+        };
+
+        // Reset timeline to live (from scrub or simulation)
+        window.resetToLive = () => {
+            speedMult = 1;
+            simStartReal = null;
+            simStartDay = null;
+            scrubDay = null;
+            document.getElementById('btn-sim').classList.remove('sim-active');
+            document.getElementById('btn-sim').textContent = 'Simulate Travel';
+            document.getElementById('btn-reset').style.display = 'none';
+            document.getElementById('sim-slider-wrap').classList.remove('visible');
+            document.getElementById('timeline-reset-btn').style.display = 'none';
+>>>>>>> upstream/main
         };
 
         // Timeline scrub — user drags the mission timeline slider
@@ -6292,6 +6593,7 @@
         }
 
         window.onTimelineScrub = (val) => {
+<<<<<<< HEAD
             dismissStartPrompt();
             const preserveMotion = Boolean(
                 timelineSliderPointerState &&
@@ -6305,6 +6607,16 @@
             pausedDay = null;
             pausedSolarDateMs = null;
             if (!preserveMotion && speedMult > 1) {
+=======
+            // Slider 0-10000 maps to TLI_DAY → MISSION_DAYS
+            scrubDay = TLI_DAY + (val / 10000) * (MISSION_DAYS - TLI_DAY);
+            scrubbing = true;
+            document.getElementById('timeline-reset-btn').style.display = 'inline-block';
+            // Pause any running simulation
+            if (speedMult > 1) {
+                simStartReal = null;
+                simStartDay = null;
+>>>>>>> upstream/main
                 speedMult = 1;
                 hideResetButton();
                 refreshSpeedControls();
@@ -6456,8 +6768,9 @@
             }
         }
 
+        let rafId = null;
         function animate() {
-            requestAnimationFrame(animate);
+            rafId = requestAnimationFrame(animate);
             const now = Date.now();
 
             // Delta time (seconds)
@@ -6758,6 +7071,12 @@
                 lastMoonOrbitRefreshMs = moonOrbitRefreshKey;
             }
 
+            // Tidal locking — near side (texture 0° lon) always faces Earth
+            // lookAt points Moon's -Z toward Earth (origin), then rotate Y by π
+            // so the +Z face (texture center = near side) faces Earth instead
+            moonMesh.lookAt(moonGroup.worldToLocal(new THREE.Vector3(0, 0, 0)));
+            moonMesh.rotateY(Math.PI);
+
             // ── Update Orion ──
             const orionKm = getTrajectoryPos(simDay);
             const orionSc = new THREE.Vector3(orionKm.x * SCALE, orionKm.y * SCALE, orionKm.z * SCALE);
@@ -6767,6 +7086,7 @@
                 new THREE.Vector3(nextKm.x, nextKm.y, nextKm.z),
                 orionKm
             ).normalize();
+<<<<<<< HEAD
             const orionLookTarget = orionWorld.clone().add(dir.clone().multiplyScalar(SCALE));
             const selectedCraftWorld = currentEventKind === 'orion' ? orionWorld : activeEventWorldPos;
             const selectedCraftLookTarget = currentEventKind === 'orion'
@@ -6989,6 +7309,17 @@
             if (eventModelEngineLight) {
                 eventModelEngineLight.intensity = 1.5 + Math.sin(now * 0.005) * 0.5;
             }
+=======
+            orionGroup.lookAt(orionSc.clone().sub(dir.clone().multiplyScalar(SCALE)));
+
+            // Beacon pulse — fade out when camera is close
+            const camDist = camera.position.distanceTo(orionGroup.position);
+            const fadeFar = Math.min(1, camDist / 2); // full at dist>2, fades to 0 when close
+            beacon.material.opacity = fadeFar * (0.7 + 0.3 * Math.sin(now * 0.006));
+            engineGlow.intensity = fadeFar * (2 + Math.sin(now * 0.004) * 1);
+            orionLight.intensity = fadeFar * 0.3;
+            if (beaconSprite) beaconSprite.material.opacity = fadeFar * 0.85;
+>>>>>>> upstream/main
 
             // ── Traveled trajectory ──
             const traveledEndDay = Math.max(0, Math.min(MISSION_DAYS, simDay));
@@ -7027,6 +7358,7 @@
                 earthBeaconSprite.material.opacity = useMinimalEarthHalo ? 0 : 0.8;
             }
 
+<<<<<<< HEAD
             // ── Earth rotation (360° in 24h, accelerated with sim) ──
             const earthAngularVel = (2 * Math.PI) / 86400; // rad/s
             const earthRotationSpeed =
@@ -7053,6 +7385,28 @@
             }
             sunDir.position.copy(SOLAR_CENTER);
             sunDir.target.position.copy(earthGroup.position);
+=======
+            // ── Earth rotation (GMST-based, correct continent orientation) ──
+            const simMs = LAUNCH_TIME + simDay * 86400000;
+            const dJ2000 = (simMs - J2000_MS) / 86400000;
+            const gmstDeg = (280.46061837 + 360.98564736629 * dJ2000) % 360;
+            earthMesh.rotation.y = gmstDeg * Math.PI / 180;
+
+            // ── Sun orbital motion (driven by simDay, from JPL initial angle) ──
+            const sunAngle = SUN_INIT_ANGLE - simDay * (2 * Math.PI / 365.25);
+            sunDir.position.set(
+                Math.cos(sunAngle) * SUN_LIGHT_DIST,
+                SUN_ELEVATION,
+                Math.sin(sunAngle) * SUN_LIGHT_DIST
+            );
+            if (sunSprite) {
+                sunSprite.position.set(
+                    Math.cos(sunAngle) * SUN_SPRITE_DIST,
+                    SUN_ELEVATION * (SUN_SPRITE_DIST / SUN_LIGHT_DIST),
+                    Math.sin(sunAngle) * SUN_SPRITE_DIST
+                );
+            }
+>>>>>>> upstream/main
 
             // ── Camera ──
             // Animate transitions first (button clicks)
@@ -7092,6 +7446,7 @@
                     }
                 } else if (cameraMode === 'focus-earth') {
                     const offset = camera.position.clone().sub(controls.target);
+<<<<<<< HEAD
                     const dolly = getCurrentForwardDirection().multiplyScalar(zoomForwardAmount);
                     const focusAnchor = earthGroup.position.clone();
                     controls.target.copy(focusAnchor).add(dolly).add(trackedPanOffset);
@@ -7110,6 +7465,18 @@
                     }
                 } else if (cameraMode === 'earth-moon') {
                     const mid = getEarthMoonViewCenter();
+=======
+                    controls.target.copy(orionSc);
+                    camera.position.copy(orionSc).add(offset);
+                } else if (cameraMode === 'follow-moon') {
+                    const mp = moonGroup.position;
+                    const offset = camera.position.clone().sub(controls.target);
+                    controls.target.copy(mp);
+                    camera.position.copy(mp).add(offset);
+                } else if (cameraMode === 'overview') {
+                    const mid = moonGroup.position.clone().multiplyScalar(0.45);
+                    mid.y = 0;
+>>>>>>> upstream/main
                     const offset = camera.position.clone().sub(controls.target);
                     const dolly = getCurrentForwardDirection().multiplyScalar(zoomForwardAmount);
                     controls.target.copy(mid).add(dolly).add(trackedPanOffset);
@@ -7398,6 +7765,21 @@
         }
 
         // ═══════════════════════════════════════════
+        // VISIBILITY — resume when tab returns from background
+        // ═══════════════════════════════════════════
+        // Browsers pause requestAnimationFrame when tab is hidden.
+        // When the user returns, we reset prevFrameTime so dt doesn't
+        // spike, and the next frame uses Date.now() for correct positions.
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                prevFrameTime = Date.now();
+                // Safety: cancel stale RAF and restart loop to ensure it's alive
+                cancelAnimationFrame(rafId);
+                rafId = requestAnimationFrame(animate);
+            }
+        });
+
+        // ═══════════════════════════════════════════
         // INIT
         // ═══════════════════════════════════════════
         function updateTrackerLayoutSize() {
@@ -7428,6 +7810,7 @@
             const elapsed = now - LAUNCH_TIME;
             const t = Math.max(0, Math.min(elapsed / MISSION_DURATION_MS, 1.0));
             const day = t * MISSION_DAYS;
+<<<<<<< HEAD
             document.getElementById('planet-date-input').value = msToDateInputValue(solarBaseDateMs);
             lastPlanetDateInputValue = msToDateInputValue(solarBaseDateMs);
 
@@ -7499,6 +7882,14 @@
             const earthMoonFocusCamera = getEventFocusCamera('earthMoon', mid);
             camera.position.copy(earthMoonFocusCamera.position);
             controls.target.copy(earthMoonFocusCamera.target);
+=======
+            const moonKm = getMoonPos(day);
+            moonGroup.position.set(moonKm.x * SCALE, moonKm.y * SCALE, moonKm.z * SCALE);
+            const mid = moonGroup.position.clone().multiplyScalar(0.45);
+            mid.y = 0;
+            camera.position.set(mid.x, 180, mid.z + 110);
+            controls.target.copy(mid);
+>>>>>>> upstream/main
             controls.update();
             starBackgroundGroup.position.copy(camera.position);
             if (getHashFollowValue() || getHashFocusValue()) applyFocusHash();
