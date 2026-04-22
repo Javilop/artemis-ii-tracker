@@ -1,0 +1,58 @@
+id: orion2026
+label: Orion 2026
+kind: orion
+vehicle: sphere
+object:
+  name: orion
+  path: spacecraft/OrionFull.stl
+  scale: 0.0001
+  follow_label_scale: 4
+  follow_label_offset_y: 0.06
+  dimensions_raw:
+    width: 338.36
+    height: 213.26
+    depth: 154.01
+  dimensions_scene:
+    width: 0.033836
+    height: 0.021326
+    depth: 0.015401
+  rotation_y: 0
+  rotation_z: 0
+  position_offset: [0.03985, 0.0667, 77.014707]
+  render_order: 30
+  defer_load: true
+  replace_vehicle_when_loaded: true
+object_name: orion
+follow_label: Follow Orion
+mission_name: ARTEMIS II
+browser_title: Artemis II — Live Mission Tracker
+overview_label: Mission Overview
+overview_view: earth-moon
+launch_time: 2026-04-01T22:35:00Z
+mission_days: 10
+start_date: 2026-04-06T12:00:00Z
+end_date: 2026-04-11T00:07:00Z
+trajectory:
+  paths:
+    - paths/artemis-ii-oem-2026-04-02-to-ei-v3.zip
+play_speed: 30000
+initial_view: earth-moon
+landing_site:
+  lat_deg: 32.6
+  lon_deg: -117.8
+  altitude_km: 18
+focus_moon_earth_background: false
+show_solar_system: false
+marker_orb:
+  model_label_scale: 0.22
+  model_label_offset_y: 0.14
+focus_cameras:
+  earth:
+    position_offset: [0, 9.5565, 12.742]
+    target_offset: [0, 0, 0]
+  moon:
+    position_offset: [1.737, 2.6055, 4.3425]
+    target_offset: [0, 0, 0]
+  earth_moon:
+    position_offset: [0, 100, 60]
+    target_offset: [0, 0, 0]

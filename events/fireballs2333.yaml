@@ -1,0 +1,49 @@
+id: fireballs2333
+label: Fireballs 2333
+kind: custom
+vehicle: sphere
+vehicle_label: FIREBALLS
+object_name: impact1
+follow_label: Follow Fireballs
+mission_name: FIREBALLS 2333
+browser_title: Fireballs 2333
+overview_label: Event Overview
+overview_view: event
+start_date: 2333-01-08T12:00:00Z
+end_date: 2333-12-28T12:00:00Z
+initial_view: event
+initial_camera:
+  position: [86000, 32000, 124000]
+  target: [0, 0, 0]
+phase_labels: [Impact I, Impact II, Impact III, Impact IV, Impact V, Complete]
+route:
+  - date: 2333-01-08T12:00:00Z
+    body: Earth
+    offset_km: [900000, 220000, -120000]
+  - date: 2333-01-11T12:00:00Z
+    body: Earth
+    offset_km: [0, 0, 0]
+  - date: 2333-03-18T12:00:00Z
+    body: Earth
+    offset_km: [-850000, 140000, 360000]
+  - date: 2333-03-21T12:00:00Z
+    body: Earth
+    offset_km: [0, 0, 0]
+  - date: 2333-06-09T12:00:00Z
+    body: Earth
+    offset_km: [420000, -240000, 820000]
+  - date: 2333-06-12T12:00:00Z
+    body: Earth
+    offset_km: [0, 0, 0]
+  - date: 2333-09-17T12:00:00Z
+    body: Earth
+    offset_km: [-620000, 320000, -760000]
+  - date: 2333-09-20T12:00:00Z
+    body: Earth
+    offset_km: [0, 0, 0]
+  - date: 2333-12-25T12:00:00Z
+    body: Earth
+    offset_km: [780000, 160000, 540000]
+  - date: 2333-12-28T12:00:00Z
+    body: Earth
+    offset_km: [0, 0, 0]

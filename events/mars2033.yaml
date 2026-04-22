@@ -1,0 +1,19 @@
+id: mars2033
+label: Mars 2033
+kind: mars
+vehicle: starship
+object_name: starship
+follow_label: Follow Starship
+mission_name: MARS 2033
+browser_title: Mars 2033 - 1005 Day Mission
+overview_label: Mission Overview
+overview_view: event
+depart_earth: 2033-04-15T12:00:00Z
+arrive_target: 2033-12-30T12:00:00Z
+depart_target: 2035-05-01T12:00:00Z
+return_earth: 2036-01-15T12:00:00Z
+initial_view: event
+initial_camera:
+  position: [51888.875, 31961.696, 95055.78]
+  target: [8178.805, -290.665, 6261.027]
+phase_labels: [Depart, "", Arrive Mars, Stay, Depart Mars, Return]

@@ -1,0 +1,12 @@
+{
+  "defaultEventId": "",
+  "events": [
+    { "id": "starman2018",  "label": "Starman 2018",      "specFile": "starman2018.config" },
+    { "id": "orion2026",   "label": "Orion 2026",         "specFile": "orion2026.yaml"     },
+    { "id": "iss",         "label": "ISS 2030",           "specFile": "iss.yaml"           },
+    { "id": "mars2033",    "label": "Mars 2033",          "specFile": "mars2033.yaml"      },
+    { "id": "futurama2100","label": "Futurama 2100",      "specFile": "futurama2100.yaml"  },
+    { "id": "fireballs2333","label": "Fireballs 2333",    "specFile": "fireballs2333.yaml" },
+    { "id": "starlinkgen1","label": "Starlink Satellite", "specFile": "starlink-gen1.yaml" }
+  ]
+}
