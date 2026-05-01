@@ -7,6 +7,8 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>Artemis II — Live Mission Tracker</title>
+    <link rel="stylesheet" href="/localsite/css/event.css">
+    <script src="/localsite/js/event.js"></script>
     <script>
         (() => {
             const DEFAULT_EVENT_ID = 'orion2026';
@@ -16,168 +18,18 @@
             const useModelEarth = hostname.includes('model.earth');
             const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
             const requestedEventId = params.get('event') || '';
-            const parseYamlScalar = (yamlText, key) => {
-                const match = yamlText.match(new RegExp(`^${key}:\\s*(.+)$`, 'm'));
-                if (!match) return '';
-                return match[1].trim().replace(/^['"]|['"]$/g, '');
-            };
-            const parseYamlBoolean = (yamlText, key, fallback = true) => {
-                const value = parseYamlScalar(yamlText, key);
-                if (!value) return fallback;
-                return !/^(false|0|no|off)$/i.test(value);
-            };
-            const isNarrowBootstrapUi = () => Math.max(window.innerWidth || 0, document.documentElement?.clientWidth || 0) <= 700;
-            const getBootstrapOverviewLabel = (label) => {
-                const nextLabel = `${label || 'Overview'}`.trim();
-                return isNarrowBootstrapUi() ? nextLabel.replace(/\s+Overview$/i, '') || nextLabel : nextLabel;
-            };
-            const initialMetaTargetIds = [
-                'mission-title-text',
-                'mission-name',
-                'event',
-                'btn-overview',
-                'btn-follow',
-                'btn-speed',
-                'btn-solar-system',
-                'telemetry',
-                'event-video-wrap',
-                'event-video-frame'
-            ];
-            const hasInitialMetaTargets = () => initialMetaTargetIds.every((id) => document.getElementById(id));
-            let initialMetaRetryScheduled = false;
-            let initialMetaRetryCount = 0;
-            const scheduleInitialMetaRetry = () => {
-                if (initialMetaRetryScheduled || hasInitialMetaTargets()) return;
-                if (initialMetaRetryCount > 120) return;
-                initialMetaRetryScheduled = true;
-                requestAnimationFrame(() => {
-                    initialMetaRetryScheduled = false;
-                    initialMetaRetryCount += 1;
-                    if (typeof window.__applyInitialEventMetaToDom === 'function') {
-                        window.__applyInitialEventMetaToDom();
-                    }
-                    if (!hasInitialMetaTargets()) {
-                        scheduleInitialMetaRetry();
-                    }
-                });
-            };
 
-            window.__pageDefaultEventId = DEFAULT_EVENT_ID;
-            window.__initialEventId = requestedEventId || DEFAULT_EVENT_ID;
+            if (window.SharedEventUI) {
+                window.SharedEventUI.bootstrap({
+                    defaultEventId: DEFAULT_EVENT_ID,
+                    eventsBasePath: './events',
+                    requestedEventId,
+                    applyBrowserTitle: true
+                });
+            }
+
             window.__footerProfileImageSrc = useModelEarth ? 'https://model.earth/localsite/img/logo/modelearth/model-earth.png' : useNautProfile ? './cadets/naut.jpg' : './cadets/javi.jpg';
             window.__footerProfileImageAlt = useModelEarth ? 'model.earth' : useNautProfile ? 'Naut' : 'Javi';
-            window.__latestInitialEventMeta = null;
-            window.__applyInitialEventMetaToDom = () => {
-                const meta = window.__latestInitialEventMeta;
-                if (!meta) return;
-                const titleEl = document.getElementById('mission-title-text');
-                const nameEl = document.getElementById('mission-name');
-                const eventSelect = document.getElementById('event');
-                const overviewButton = document.getElementById('btn-overview');
-                const followButton = document.getElementById('btn-follow');
-                const simButton = document.getElementById('btn-speed');
-                const solarSystemButton = document.getElementById('btn-solar-system');
-                const telemetry = document.getElementById('telemetry');
-                const eventVideoWrap = document.getElementById('event-video-wrap');
-                const eventVideoFrame = document.getElementById('event-video-frame');
-
-                if (titleEl) titleEl.textContent = meta.titleText || '';
-                if (nameEl) {
-                    nameEl.textContent = meta.missionName || '';
-                    nameEl.classList.toggle('mission-name-long', (meta.missionName || '').length > 25);
-                    nameEl.classList.toggle('mission-name-xlong', (meta.missionName || '').length > 50);
-                }
-                if (overviewButton) overviewButton.textContent = getBootstrapOverviewLabel(meta.overviewLabel || 'Overview');
-                if (followButton) followButton.textContent = meta.followLabel || 'Follow';
-                if (simButton) simButton.textContent = 'Model Speed 1x';
-                if (solarSystemButton) solarSystemButton.style.display = meta.showSolarSystem === false ? 'none' : '';
-                if (eventSelect) {
-                    if (eventSelect.options.length <= 1 && window.__eventsConfig) {
-                        eventSelect.innerHTML = window.__eventsConfig.events.map((e) =>
-                            `<option value="${e.id}" data-follow-hash="">${e.label}</option>`
-                        ).join('');
-                    }
-                    eventSelect.value = meta.eventId;
-                }
-                if (telemetry && eventVideoWrap && eventVideoFrame) {
-                    const youtubeId = (meta.videoYoutubeId || '').trim();
-                    const hasVideo = Boolean(youtubeId);
-                    telemetry.classList.toggle('has-video', hasVideo);
-                    if (hasVideo) {
-                        const nextSrc = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&playsinline=1&rel=0`;
-                        if (eventVideoFrame.dataset.youtubeId !== youtubeId) {
-                            eventVideoFrame.src = nextSrc;
-                            eventVideoFrame.dataset.youtubeId = youtubeId;
-                        }
-                    } else {
-                        eventVideoFrame.src = 'about:blank';
-                        eventVideoFrame.dataset.youtubeId = '';
-                    }
-                }
-            };
-            window.__applyInitialEventMeta = (meta) => {
-                if (!meta) return;
-                window.__latestInitialEventMeta = meta;
-                window.__applyInitialEventMetaToDom();
-                scheduleInitialMetaRetry();
-            };
-            window.__eventsConfigPromise = fetch('./events/events.json', { cache: 'no-cache' })
-                .then((r) => {
-                    if (!r.ok) throw new Error('Unable to load events/events.json');
-                    return r.json();
-                })
-                .then((config) => {
-                    window.__eventsConfig = config;
-                    const allIds = new Set(config.events.map((e) => e.id));
-                    if (requestedEventId && !allIds.has(requestedEventId)) {
-                        window.__initialEventId = config.defaultEventId || config.events[0]?.id;
-                    }
-                    const jsonDefault = config.defaultEventId || config.events[0]?.id;
-                    if (jsonDefault && jsonDefault !== DEFAULT_EVENT_ID) {
-                        console.log(`%cDefault eventID "${DEFAULT_EVENT_ID}" in page given priority over default "${jsonDefault}" in events.json`, 'color: blue');
-                    }
-                    return config;
-                });
-            // Fetch the initial event yaml asynchronously. When the requested event is the page
-            // default (or absent), start immediately without waiting for events.json.
-            // For any other requested event, chain off events.json to discover its specFile.
-            window.__initialEventSpecTextPromise = (!requestedEventId || requestedEventId === DEFAULT_EVENT_ID)
-                ? fetch(`./events/${DEFAULT_EVENT_ID}.yaml`, { cache: 'no-cache' })
-                    .then((r) => {
-                        if (!r.ok) throw new Error(`Unable to load event spec: events/${DEFAULT_EVENT_ID}.yaml`);
-                        return r.text();
-                    })
-                : window.__eventsConfigPromise.then((config) => {
-                    const entry = config.events.find((e) => e.id === window.__initialEventId) || config.events[0];
-                    return fetch(`./events/${entry.specFile}`, { cache: 'no-cache' })
-                        .then((r) => {
-                            if (!r.ok) throw new Error(`Unable to load event spec: events/${entry.specFile}`);
-                            return r.text();
-                        });
-                });
-            window.__initialEventMetaPromise = window.__initialEventSpecTextPromise
-                .then((yamlText) => {
-                    const eventId = window.__initialEventId;
-                    const label = parseYamlScalar(yamlText, 'label') || eventId;
-                    const missionName = parseYamlScalar(yamlText, 'mission_name');
-                    const browserTitle = parseYamlScalar(yamlText, 'browser_title');
-                    const kind = parseYamlScalar(yamlText, 'kind');
-                    const overviewLabel = parseYamlScalar(yamlText, 'overview_label') || 'Overview';
-                    const followLabel = parseYamlScalar(yamlText, 'follow_label') || 'Follow';
-                    const showSolarSystem = parseYamlBoolean(yamlText, 'show_solar_system', true);
-                    const videoYoutubeId = parseYamlScalar(yamlText, 'video_youtube_id') || parseYamlScalar(yamlText, 'youtube_id');
-                    const titleText = kind === 'orion' ? 'NASA · CSA' : '';
-                    if (browserTitle) {
-                        document.title = browserTitle;
-                    }
-                    const meta = { eventId, label, missionName, browserTitle, kind, overviewLabel, followLabel, showSolarSystem, videoYoutubeId, titleText };
-                    window.__applyInitialEventMeta(meta);
-                    return meta;
-                })
-                .catch((error) => {
-                    console.error(error);
-                    return null;
-                });
         })();
     </script>
     <style>
@@ -204,202 +56,6 @@
             color: #fff;
         }
         #canvas-container { width: 100%; height: 100%; }
-
-        #hud {
-            position: absolute; top: 0; left: 0; width: 100%;
-            pointer-events: none; z-index: 110;
-            padding: 24px 32px;
-            container-type: inline-size;
-        }
-        #hud-left {
-            display: inline-flex;
-            flex-direction: column;
-            gap: 4px;
-            pointer-events: auto;
-            cursor: pointer;
-            padding: 8px 12px 8px 14px;
-            background: rgba(10,12,20,0.95);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 8px;
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            transition: all 0.3s;
-            max-width: max-content;
-        }
-        #hud-left:hover,
-        #hud-left:focus-within {
-            background: rgba(255,255,255,0.14);
-            border-color: rgba(255,255,255,0.18);
-        }
-        #hud-left.is-open {
-            display: none;
-        }
-        .mission-name-row {
-            display: inline-flex;
-            align-items: center;
-            gap: 14px;
-            min-width: 0;
-        }
-        .mission-dropdown-arrow {
-            width: 30px;
-            height: 30px;
-            flex: 0 0 auto;
-            color: rgba(255,255,255,0.72);
-            margin-top: 2px;
-        }
-        .mission-dropdown-arrow svg {
-            display: block;
-            width: 100%;
-            height: 100%;
-            fill: currentColor;
-        }
-        #event-picker-wrap {
-            display: block;
-        }
-        #event {
-            display: none;
-            width: 100%;
-        }
-        #mission-menu {
-            display: none;
-            position: absolute;
-            top: 24px;
-            left: 32px;
-            pointer-events: auto;
-            z-index: 113;
-            min-width: 320px;
-        }
-        #mission-menu.open {
-            display: block;
-        }
-        .mission-menu-backdrop {
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.06);
-        }
-        .mission-menu-panel {
-            position: relative;
-            z-index: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            padding: 12px;
-            background: rgba(10,12,20,0.9);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 10px;
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            box-shadow: 0 12px 48px rgba(0,0,0,0.45);
-        }
-        .mission-menu-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 14px;
-            padding: 2px 2px 8px;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-            margin-bottom: 2px;
-        }
-        .mission-menu-header-title {
-            font-size: 11px;
-            font-weight: 600;
-            letter-spacing: 5px;
-            text-transform: uppercase;
-            color: rgba(255,255,255,0.4);
-        }
-        .mission-menu-close {
-            border: 1px solid rgba(255,255,255,0.1);
-            background: rgba(255,255,255,0.06);
-            color: rgba(255,255,255,0.7);
-            border-radius: 999px;
-            padding: 5px 10px;
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            cursor: pointer;
-        }
-        .mission-menu-close:hover {
-            background: rgba(255,255,255,0.12);
-            color: #fff;
-        }
-        .mission-menu-list {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            max-height: min(62vh, 540px);
-            overflow: auto;
-            padding-right: 2px;
-        }
-        .mission-menu-item {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-            width: 100%;
-            padding: 11px 12px;
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 8px;
-            background: rgba(255,255,255,0.025);
-            color: rgba(255,255,255,0.75);
-            cursor: pointer;
-            text-align: left;
-            transition: all 0.2s;
-        }
-        .mission-menu-item:hover {
-            background: rgba(255,255,255,0.08);
-            border-color: rgba(255,255,255,0.2);
-            color: #fff;
-        }
-        .mission-menu-item.active {
-            background: rgba(110,198,255,0.08);
-            border-color: rgba(110,198,255,0.24);
-            color: #fff;
-        }
-        .mission-menu-item-label {
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 4px;
-            text-transform: uppercase;
-            color: rgba(255,255,255,0.38);
-        }
-        .mission-menu-item-name {
-            font-size: 18px;
-            font-weight: 800;
-            letter-spacing: -0.3px;
-            line-height: 1.1;
-        }
-        .mission-title {
-            font-size: 11px; font-weight: 600; letter-spacing: 5px;
-            text-transform: uppercase; color: rgba(255,255,255,0.4);
-        }
-        .mission-name {
-            font-size: 38px; font-weight: 800; letter-spacing: -0.5px;
-            background: linear-gradient(135deg, #fff 0%, #6ec6ff 60%, #ff6b35 100%);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-        }
-        .mission-name-long {
-            font-size: 30px;
-        }
-        .mission-name-xlong {
-            font-size: 24px;
-        }
-        @container (max-width: 640px) {
-            .mission-name {
-                font-size: 18px;
-            }
-        }
-        .mission-status {
-            display: inline-flex; align-items: center; gap: 8px;
-            font-size: 11px; font-weight: 600; letter-spacing: 2.5px;
-            text-transform: uppercase; color: #4cff91; margin-top: 2px;
-        }
-        .status-dot {
-            width: 7px; height: 7px; background: #4cff91; border-radius: 50%;
-            animation: pulse-dot 2s infinite;
-        }
-        @keyframes pulse-dot {
-            0%, 100% { opacity: 1; box-shadow: 0 0 6px #4cff91; }
-            50% { opacity: 0.3; box-shadow: 0 0 14px #4cff91; }
-        }
 
         #telemetry {
             position: absolute; bottom: calc(28px + var(--mobile-controls-footer-offset)); left: 32px; z-index: 110; pointer-events: none;
@@ -1054,10 +710,6 @@
             display: inline-flex;
         }
 
-        .met-counter {
-            font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums;
-            color: rgba(255,255,255,0.25); letter-spacing: 1.5px; margin-top: 4px;
-        }
         .data-source {
             font-size: 10px;
             font-weight: 600;
@@ -1334,36 +986,25 @@
     <button class="hint-btn" id="btn-close-up-overlay" onclick="focusCloseUp()">Zoom to Mission</button>
 
     <div id="canvas-container"></div>
-
-    <div id="hud">
-        <div id="hud-left" role="button" tabindex="0" aria-label="Choose mission" onclick="toggleMissionMenu()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleMissionMenu();}">
-            <div class="mission-title" id="mission-title-text"></div>
-            <div class="mission-name-row">
-                <div class="mission-name" id="mission-name"></div>
-                <div class="mission-dropdown-arrow" aria-hidden="true">
-                    <svg viewBox="0 0 16 16" focusable="false" aria-hidden="true">
-                        <path d="M4.5 6.25a1 1 0 0 1 1.42.04L8 8.54l2.08-2.25a1 1 0 0 1 1.46 1.36l-2.8 3.02a1 1 0 0 1-1.46 0l-2.8-3.02a1 1 0 0 1 .02-1.42Z"/>
-                    </svg>
-                </div>
-            </div>
-            <div class="mission-status">
-                <div class="status-dot"></div>
-                <span id="phase-text"></span>
-            </div>
-            <div class="met-counter" id="met-counter"></div>
-        </div>
-    </div>
-    <div id="mission-menu" aria-hidden="true">
-        <div class="mission-menu-backdrop" onclick="toggleMissionMenu(false)"></div>
-        <div class="mission-menu-panel" role="dialog" aria-label="Choose mission">
-            <div class="mission-menu-header">
-                <div class="mission-menu-header-title">Missions</div>
-                <button class="mission-menu-close" type="button" onclick="toggleMissionMenu(false)">Close</button>
-            </div>
-            <div class="mission-menu-list" id="mission-menu-list"></div>
-        </div>
-    </div>
-    <select class="hint-select" id="event" onchange="onEventChange(this.value)" aria-hidden="true" tabindex="-1"></select>
+    <script>
+        if (window.SharedEventUI) {
+            window.SharedEventUI.mountHud({
+                targetSelector: '#spaceTracker',
+                mode: 'overlay',
+                onMissionSelect: async function(missionId, option) {
+                    const currentHash = typeof window.SharedEventUI.getHashParams === 'function'
+                        ? window.SharedEventUI.getHashParams()
+                        : Object.fromEntries(new URLSearchParams(window.location.hash.replace(/^#/, '')).entries());
+                    if (option && option.dataset && option.dataset.followHash && currentHash.follow) {
+                        window.SharedEventUI.setHashParam('follow', option.dataset.followHash);
+                    }
+                    if (typeof window.onEventChange === 'function') {
+                        await window.onEventChange(missionId);
+                    }
+                }
+            });
+        }
+    </script>
 
 
     <div id="telemetry">
@@ -1646,10 +1287,10 @@
         import yaml from 'https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/+esm';
 
         const DEFAULT_BROWSER_TITLE = 'Artemis II — Live Mission Tracker';
-        const { defaultEventId: _defaultEventId, events: _eventsArr } = await (
-            window.__eventsConfigPromise ||
-            fetch('./events/events.json', { cache: 'no-cache' }).then((r) => r.json())
-        );
+        if (!window.__eventsConfigPromise) {
+            throw new Error('SharedEventUI bootstrap did not initialize window.__eventsConfigPromise');
+        }
+        const { defaultEventId: _defaultEventId, events: _eventsArr } = await window.__eventsConfigPromise;
         const DEFAULT_EVENT_ID = window.__pageDefaultEventId || _defaultEventId || _eventsArr[0]?.id;
         const EVENT_IDS = _eventsArr.map((e) => e.id);
         const EVENT_OPTIONS = new Set(EVENT_IDS);
@@ -3454,20 +3095,15 @@
         }
 
         function setMissionMenuOpen(open) {
-            const hudLeft = document.getElementById('hud-left');
-            const missionMenu = document.getElementById('mission-menu');
-            const eventSelect = document.getElementById('event');
-            if (hudLeft) hudLeft.classList.toggle('is-open', open);
-            if (missionMenu) missionMenu.classList.toggle('open', open);
-            if (eventSelect) eventSelect.style.display = 'none';
-            if (hudLeft) hudLeft.setAttribute('aria-hidden', open ? 'true' : 'false');
-            if (missionMenu) missionMenu.setAttribute('aria-hidden', open ? 'false' : 'true');
+            if (window.SharedEventUI) {
+                window.SharedEventUI.setMissionMenuOpen(open);
+            }
         }
 
         function toggleMissionMenu(forceOpen = null) {
-            const hudLeft = document.getElementById('hud-left');
-            const isOpen = hudLeft?.classList.contains('is-open') || false;
-            setMissionMenuOpen(forceOpen === null ? !isOpen : Boolean(forceOpen));
+            if (window.SharedEventUI) {
+                window.SharedEventUI.toggleMissionMenu(forceOpen);
+            }
         }
         window.toggleMissionMenu = toggleMissionMenu;
 
@@ -3503,15 +3139,8 @@
         }
 
         function hydrateEventMenu(selectedEventId = null) {
-            const select = document.getElementById('event');
-            if (!select) return;
-            if (select.options.length <= 1) {
-                select.innerHTML = EVENT_IDS.map((id) =>
-                    `<option value="${id}" data-follow-hash="">${EVENT_LABELS[id] || id}</option>`
-                ).join('');
-            }
-            if (selectedEventId && EVENT_OPTIONS.has(selectedEventId)) {
-                select.value = selectedEventId;
+            if (window.SharedEventUI) {
+                window.SharedEventUI.hydrateEventMenu(selectedEventId && EVENT_OPTIONS.has(selectedEventId) ? selectedEventId : null);
             }
             populateMissionMenuFollowHashes();
         }
@@ -3525,36 +3154,23 @@
                 if (option) {
                     option.dataset.followHash = spec.followHash || '';
                 }
+                if (window.SharedEventUI) {
+                    window.SharedEventUI.setEventOptionMeta(id, { followHash: spec.followHash || '' });
+                }
             }));
             rebuildMissionMenuList();
         }
 
         function rebuildMissionMenuList() {
-            const list = document.getElementById('mission-menu-list');
-            if (!list) return;
-            const select = document.getElementById('event');
-            list.innerHTML = EVENT_IDS.map((id) => {
-                const label = EVENT_LABELS[id] || id;
-                const option = select?.querySelector(`option[value="${id}"]`);
-                const followHash = option?.dataset.followHash || '';
-                const isActive = id === currentEventId ? ' active' : '';
-                return `
-                    <button type="button" class="mission-menu-item${isActive}" data-event-id="${id}" data-follow-hash="${followHash}" onclick="selectMissionFromMenu('${id}')">
-                        <div class="mission-menu-item-label">${id}</div>
-                        <div class="mission-menu-item-name">${label}</div>
-                    </button>
-                `;
-            }).join('');
+            if (window.SharedEventUI) {
+                window.SharedEventUI.refreshMissionMenu();
+            }
         }
 
         function selectMissionFromMenu(missionId) {
-            const select = document.getElementById('event');
-            const option = select?.querySelector(`option[value="${missionId}"]`);
-            if (select) select.value = missionId;
-            if (option?.dataset.followHash && getHashFollowValue()) {
-                setFollowHash(option.dataset.followHash);
+            if (window.SharedEventUI) {
+                return window.SharedEventUI.selectMissionFromMenu(missionId);
             }
-            onEventChange(missionId);
         }
         window.selectMissionFromMenu = selectMissionFromMenu;
 
@@ -7368,6 +6984,9 @@
                         ? `Day ${Math.floor(missionDay) + 1} of ${Math.max(1, Math.round((currentEventEndMs - currentEventStartMs) / MS_PER_DAY))}`
                         : `Day ${Math.floor(hudDay) + 1} of ${Math.round(MISSION_DAYS)}`
                 );
+                if (window.SharedEventUI && typeof window.SharedEventUI.updateHudVisibility === 'function') {
+                    window.SharedEventUI.updateHudVisibility();
+                }
                 setTelemetryReadyIfPopulated();
             }
 
