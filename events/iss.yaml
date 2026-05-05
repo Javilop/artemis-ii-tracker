@@ -1,0 +1,77 @@
+id: iss
+label: ISS 2030 yaml
+kind: earth-orbit
+vehicle: model
+vehicle_label: ISS
+object_name: iss
+object:
+  name: iss
+  path: spacecraft/iss-centered.babylon
+  scale: 0.0000768
+  rotation_y: 1.5707963267948966
+  render_order: 30
+  radial_offset_km: 120
+  always_on_top: false
+  lock_orientation_until_tumble: true
+  edge_highlight:
+    enabled: true
+    color: '#ffd79b'
+    intensity: 0.16
+    power: 2.2
+    scale: 1.004
+  surface_glow:
+    enabled: true
+    color: '#ff7a2c'
+    dark_color: '#9ea7b0'
+    lit_color: '#ff8b3d'
+    intensity: 0.042
+    pulse_amplitude: 0.028
+marker_orb:
+  enabled: true
+  start_date: 2030-12-29T00:00:00Z
+  scale: 0.00072
+  opacity: 0.11875
+  depth_write: false
+  side: front
+  render_order: 2
+  label_scale: 1
+  label_offset_y: 0.22
+  model_label_scale: 0.22
+  model_label_offset_y: 0.08
+follow_camera:
+  distance: 0.0004
+  height: 0.00007
+  look_ahead: 0.0012
+  target_height: 0.00002
+  object_scale_multiplier: 1
+follow_speed: 10
+tumble_speed: 200
+tumble_start_date: 2030-11-10T23:02:00Z
+tumble_speed_deg: 0.4
+tumble_axes: [0.42, 0.27, 0.58]
+follow_label: Follow ISS
+mission_name: International Space Station 2030
+browser_title: International Space Station 2030
+overview_label: Overview
+overview_view: earth
+start_date: 2030-11-07T00:00:00Z
+end_date: 2030-12-31T23:59:59Z
+scene_start_date: 2030-11-10T23:00:00Z
+solar_start_date: 2030-11-11T00:00:00Z
+initial_view: earth
+path_color: '#9fe7ff'
+phase_labels: [Stable Orbit, Drag Build, Lowering, Final Orbit, Reentry, South Pacific]
+focus_cameras:
+  earth:
+    position_offset: [0, 3.5, 10]
+    target_offset: [0, 0, 0]
+initial_camera:
+  relative: true
+  anchor_body: Earth
+  position: [0, 8, 22]
+  target: [0, 0, 0]
+tle_path: paths/iss-current.tle
+earth_orbit:
+  reentry_altitude_km: 20
+  sample_count: 960
+  visual_sample_count: 96

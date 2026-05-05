@@ -1,0 +1,52 @@
+id: futurama2100
+label: Futurama 2100
+kind: custom
+vehicle: model
+vehicle_label: Planet Express
+object_name: goodnews
+object:
+  name: goodnews
+  path: spacecraft/goodnews.glb
+  scale: 0.5
+  rotation_y: 3.141592653589793
+follow_label: Follow Futurama
+mission_name: FUTURAMA 2100
+browser_title: Futurama 2100
+overview_label: Mission Overview
+overview_view: event
+start_date: 2100-01-01T12:00:00Z
+end_date: 2100-04-20T12:00:00Z
+initial_view: event
+initial_camera:
+  position: [57857.993, 29810.087, 115371.939]
+  target: [-5548.984, 36.376, 35975.376]
+phase_labels: [Launch, Moon Run, Slingshot, Inner Tour, Outer Tour, Deep Space]
+route:
+  - date: 2100-01-01T12:00:00Z
+    body: Earth
+    offset_km: [650000, 180000, -90000]
+  - date: 2100-01-03T12:00:00Z
+    body: Moon
+  - date: 2100-01-05T12:00:00Z
+    body: Earth
+    offset_km: [-500000, -120000, 140000]
+  - date: 2100-01-08T12:00:00Z
+    body: Moon
+  - date: 2100-01-11T12:00:00Z
+    body: Earth
+    offset_km: [420000, 150000, 220000]
+  - date: 2100-01-22T12:00:00Z
+    body: Venus
+    offset_km: [1100000, 200000, -300000]
+  - date: 2100-02-10T12:00:00Z
+    body: Earth
+    offset_km: [-1400000, 160000, 450000]
+  - date: 2100-02-28T12:00:00Z
+    body: Mars
+    offset_km: [1600000, 280000, -420000]
+  - date: 2100-03-24T12:00:00Z
+    body: Jupiter
+    offset_km: [4500000, 500000, 900000]
+  - date: 2100-04-20T12:00:00Z
+    body: Saturn
+    offset_km: [6200000, 700000, -1200000]
